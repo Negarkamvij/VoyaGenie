@@ -10,15 +10,14 @@ load_dotenv()
 api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 
-# Models
-chat_model = genai.GenerativeModel("gemini-1.5-pro")
-vision_model = genai.GenerativeModel("gemini-pro-vision")
+# Use gemini-1.5-pro for both text and image
+model = genai.GenerativeModel("gemini-1.5-pro")
 
 # Page settings
 st.set_page_config(page_title="VoyaGenie - Smart Travel Chatbot", page_icon="🧞‍♀️")
 st.title("🧞‍♀️ VoyaGenie - Your AI Travel Companion")
 
-# Session setup
+# Session state setup
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
     st.session_state.destination = None
@@ -27,48 +26,46 @@ if "chat_history" not in st.session_state:
     st.session_state.interests = None
     st.session_state.awaiting = "greeting"
 
-# Image uploader
-uploaded_image = st.file_uploader("📸 Upload a picture of the place you want to visit (if you don't know the name)", type=["jpg", "jpeg", "png", "webp"])
+# Upload and identify image
+uploaded_image = st.file_uploader("📸 Upload a picture of the place you want to visit", type=["jpg", "jpeg", "png", "webp"])
 
 if uploaded_image and st.session_state.awaiting == "greeting":
     st.image(uploaded_image, caption="You've uploaded this destination")
 
     try:
         image_bytes = uploaded_image.read()
-        response = vision_model.generate_content([
-            "Please identify the landmark or location in this image. Return the name of the city or tourist destination.",
+        response = model.generate_content([
+            "What is this place? Identify the city or landmark. Respond only with the name.",
             {"mime_type": uploaded_image.type, "data": image_bytes}
         ])
-        guess = response.text.strip()
-        st.session_state.destination = guess
+        place = response.text.strip()
+        st.session_state.destination = place
         st.session_state.awaiting = "budget"
 
-        user_msg = "I want to go to this place (uploaded photo)."
+        user_msg = "I want to go to this place (photo uploaded)."
         st.chat_message("user").markdown(user_msg)
         st.session_state.chat_history.append({"role": "user", "content": user_msg})
 
-        bot_msg = f"It looks like this place is **{guess}**. What's your total budget for this trip?"
+        bot_msg = f"It looks like this place is **{place}**. What's your total budget for this trip?"
         st.chat_message("assistant").markdown(bot_msg)
         st.session_state.chat_history.append({"role": "assistant", "content": bot_msg})
 
     except Exception as e:
         st.error(f"❌ Could not analyze image: {str(e)}")
 
-# Show previous chat history
+# Display chat history
 for msg in st.session_state.chat_history:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# Main chat input
+# Chat input
 user_input = st.chat_input("Say something to your travel genie...")
 
 if user_input:
-    # Show user message
     st.chat_message("user").markdown(user_input)
     st.session_state.chat_history.append({"role": "user", "content": user_input})
 
-    # === SMART CONVERSATION FLOW ===
-
+    # Smart step-by-step logic
     if st.session_state.awaiting == "greeting":
         reply = "Hi! I'm VoyaGenie 🧞‍♀️. Where would you like to go on your next adventure?"
         st.session_state.awaiting = "destination"
@@ -93,10 +90,9 @@ if user_input:
         st.session_state.awaiting = "done"
         reply = "Thanks! Let me create your travel plan... 🧳✨"
 
-        # Generate plan from Gemini
+        # Compose travel prompt
         prompt = f"""
         You are VoyaGenie, a smart AI travel assistant. Based on this user info, create a full trip plan:
-
         - Destination: {st.session_state.destination}
         - Budget: {st.session_state.budget} USD
         - Transportation: {st.session_state.transport}
@@ -106,25 +102,25 @@ if user_input:
         - An intro message
         - Transportation suggestion + cost
         - Hotel vs Airbnb comparison
-        - Activities & attractions based on interests
+        - Activities & attractions matching interests
         - Estimated cost breakdown (travel, lodging, food, activities)
-        - Eco-friendly tips if relevant
+        - Eco-friendly suggestions if possible
         - Google Maps link: https://www.google.com/maps/dir/Current+Location/{st.session_state.destination}
 
-        Use clear Markdown formatting.
+        Format it in Markdown, be helpful and engaging.
         """
 
         try:
-            plan = chat_model.generate_content(prompt)
+            plan = model.generate_content(prompt)
             st.chat_message("assistant").markdown(plan.text)
             st.session_state.chat_history.append({"role": "assistant", "content": plan.text})
         except Exception as e:
             st.error(f"⚠️ Something went wrong: {str(e)}")
 
     else:
-        # Free chat after planning
+        # Continue chatting after plan
         try:
-            response = chat_model.generate_content(user_input)
+            response = model.generate_content(user_input)
             reply = response.text
         except Exception as e:
             reply = f"⚠️ Error: {str(e)}"
