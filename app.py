@@ -12,6 +12,31 @@ model = genai.GenerativeModel("gemini-1.5-pro")
 # Page setup
 st.set_page_config(page_title="VoyaGenie - Smart Travel Chatbot", page_icon="🧞‍♀️")
 st.title("🧞‍♀️ VoyaGenie - Your AI Travel Companion")
+uploaded_image = st.file_uploader("📷 Upload a picture of the place you want to visit", type=["jpg", "jpeg", "png", "webp"])
+
+if uploaded_image and st.session_state.awaiting == "greeting":
+    from PIL import Image
+    image = Image.open(uploaded_image)
+    st.image(image, caption="You've uploaded this destination")
+
+    # Ask Gemini to identify the place
+    st.chat_message("user").markdown("I want to go to this place (image uploaded).")
+    st.session_state.chat_history.append({"role": "user", "content": "Image uploaded"})
+
+    try:
+        vision_model = genai.GenerativeModel("gemini-1.5-pro-vision")
+        response = vision_model.generate_content([
+            "What is this place? Please identify the landmark or city in this image.",
+            image
+        ])
+        destination_name = response.text.strip()
+        st.chat_message("assistant").markdown(f"It looks like this is **{destination_name}**. Is that correct?")
+        st.session_state.chat_history.append({"role": "assistant", "content": response.text})
+        st.session_state.destination = destination_name
+        st.session_state.awaiting = "budget"
+    except Exception as e:
+        st.error(f"Could not analyze image: {str(e)}")
+
 
 # Initialize memory
 if "chat_history" not in st.session_state:
