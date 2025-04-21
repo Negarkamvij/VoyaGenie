@@ -124,7 +124,6 @@ Make the response well-formatted in Markdown and fun to read.
             st.session_state.chat_history.append({"role": "assistant", "content": plan.text})
         except Exception as e:
             st.error(f"⚠️ Something went wrong: {str(e)}")
-        return
 
     if st.session_state.awaiting != "done":
         st.chat_message("assistant").markdown(reply)
