@@ -27,11 +27,13 @@ if "chat_history" not in st.session_state:
     st.session_state.awaiting = "greeting"
     st.session_state.plan_generated = False
     st.session_state.image_analyzed = False
+    st.session_state.last_image_name = None
 
-# Upload and analyze image (only once)
+# Upload and analyze image (only once per unique file)
 uploaded_image = st.file_uploader("📸 Upload a photo of the place you want to visit (if you don’t know its name)", type=["jpg", "jpeg", "png", "webp"])
 
-if uploaded_image and st.session_state.awaiting == "greeting" and not st.session_state.image_analyzed:
+if uploaded_image and uploaded_image.name != st.session_state.last_image_name and st.session_state.awaiting == "greeting":
+    st.session_state.last_image_name = uploaded_image.name
     st.image(uploaded_image, caption="You've uploaded this destination")
 
     try:
