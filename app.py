@@ -17,7 +17,7 @@ model = genai.GenerativeModel("gemini-1.5-pro")
 st.set_page_config(page_title="VoyaGenie - Smart Travel Chatbot", page_icon="🧞‍♀️")
 st.title("🧞‍♀️ VoyaGenie - Your AI Travel Companion")
 
-# Session state setup
+# Initialize session state
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
     st.session_state.destination = None
@@ -25,35 +25,38 @@ if "chat_history" not in st.session_state:
     st.session_state.transport = None
     st.session_state.interests = None
     st.session_state.awaiting = "greeting"
+    st.session_state.plan_generated = False
+    st.session_state.image_analyzed = False
 
-# Upload and identify image
-uploaded_image = st.file_uploader("📸 Upload a picture of the place you want to visit", type=["jpg", "jpeg", "png", "webp"])
+# Upload and analyze image (only once)
+uploaded_image = st.file_uploader("📸 Upload a photo of the place you want to visit (if you don’t know its name)", type=["jpg", "jpeg", "png", "webp"])
 
-if uploaded_image and st.session_state.awaiting == "greeting":
+if uploaded_image and st.session_state.awaiting == "greeting" and not st.session_state.image_analyzed:
     st.image(uploaded_image, caption="You've uploaded this destination")
 
     try:
         image_bytes = uploaded_image.read()
         response = model.generate_content([
-            "What is this place? Identify the city or landmark. Respond only with the name.",
+            "Please identify the landmark or city shown in this image. Respond only with the name (e.g. 'Eiffel Tower, Paris').",
             {"mime_type": uploaded_image.type, "data": image_bytes}
         ])
         place = response.text.strip()
         st.session_state.destination = place
         st.session_state.awaiting = "budget"
+        st.session_state.image_analyzed = True
 
         user_msg = "I want to go to this place (photo uploaded)."
-        st.chat_message("user").markdown(user_msg)
-        st.session_state.chat_history.append({"role": "user", "content": user_msg})
-
         bot_msg = f"It looks like this place is **{place}**. What's your total budget for this trip?"
+
+        st.chat_message("user").markdown(user_msg)
         st.chat_message("assistant").markdown(bot_msg)
+        st.session_state.chat_history.append({"role": "user", "content": user_msg})
         st.session_state.chat_history.append({"role": "assistant", "content": bot_msg})
 
     except Exception as e:
         st.error(f"❌ Could not analyze image: {str(e)}")
 
-# Display chat history
+# Display previous chat history
 for msg in st.session_state.chat_history:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
@@ -61,11 +64,11 @@ for msg in st.session_state.chat_history:
 # Chat input
 user_input = st.chat_input("Say something to your travel genie...")
 
-if user_input:
+if user_input and not st.session_state.plan_generated:
     st.chat_message("user").markdown(user_input)
     st.session_state.chat_history.append({"role": "user", "content": user_input})
 
-    # Smart step-by-step logic
+    # Guided conversation flow
     if st.session_state.awaiting == "greeting":
         reply = "Hi! I'm VoyaGenie 🧞‍♀️. Where would you like to go on your next adventure?"
         st.session_state.awaiting = "destination"
@@ -82,33 +85,38 @@ if user_input:
 
     elif st.session_state.awaiting == "transport":
         st.session_state.transport = user_input
-        reply = "Awesome. What are your interests? (e.g., beaches, museums, food, adventure)"
+        reply = "Awesome. What are your interests? (e.g., beaches, museums, food, hiking)"
         st.session_state.awaiting = "interests"
 
     elif st.session_state.awaiting == "interests":
         st.session_state.interests = user_input
         st.session_state.awaiting = "done"
-        reply = "Thanks! Let me create your travel plan... 🧳✨"
+        st.session_state.plan_generated = True
+        reply = "Thanks! Let me create your custom travel plan... ✨"
 
-        # Compose travel prompt
+        st.chat_message("assistant").markdown(reply)
+        st.session_state.chat_history.append({"role": "assistant", "content": reply})
+
+        # Generate plan with Gemini
         prompt = f"""
-        You are VoyaGenie, a smart AI travel assistant. Based on this user info, create a full trip plan:
-        - Destination: {st.session_state.destination}
-        - Budget: {st.session_state.budget} USD
-        - Transportation: {st.session_state.transport}
-        - Interests: {st.session_state.interests}
+You are VoyaGenie, a smart AI travel planner. Based on this user's information, generate a complete travel plan.
 
-        Respond with:
-        - An intro message
-        - Transportation suggestion + cost
-        - Hotel vs Airbnb comparison
-        - Activities & attractions matching interests
-        - Estimated cost breakdown (travel, lodging, food, activities)
-        - Eco-friendly suggestions if possible
-        - Google Maps link: https://www.google.com/maps/dir/Current+Location/{st.session_state.destination}
+- Destination: {st.session_state.destination}
+- Budget: {st.session_state.budget} USD
+- Transportation: {st.session_state.transport}
+- Interests: {st.session_state.interests}
 
-        Format it in Markdown, be helpful and engaging.
-        """
+Include:
+- A friendly introduction
+- Suggested way to get there (with cost)
+- Comparison of hotel vs Airbnb (with price range and recommendations)
+- Attractions or activities based on interests
+- Estimated cost breakdown
+- Eco-friendly travel tips if possible
+- Google Maps direction link (from user to destination)
+
+Make the response well-formatted in Markdown and fun to read.
+"""
 
         try:
             plan = model.generate_content(prompt)
@@ -116,15 +124,15 @@ if user_input:
             st.session_state.chat_history.append({"role": "assistant", "content": plan.text})
         except Exception as e:
             st.error(f"⚠️ Something went wrong: {str(e)}")
-
-    else:
-        # Continue chatting after plan
-        try:
-            response = model.generate_content(user_input)
-            reply = response.text
-        except Exception as e:
-            reply = f"⚠️ Error: {str(e)}"
+        return
 
     if st.session_state.awaiting != "done":
         st.chat_message("assistant").markdown(reply)
         st.session_state.chat_history.append({"role": "assistant", "content": reply})
+
+# Optional: Reset button
+if st.session_state.plan_generated:
+    if st.button("🔄 Plan a New Trip"):
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.experimental_rerun()
