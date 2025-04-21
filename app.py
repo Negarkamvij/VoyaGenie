@@ -3,38 +3,41 @@ import os
 from dotenv import load_dotenv
 import google.generativeai as genai
 
+# Load your Gemini API key from Streamlit secrets
 load_dotenv()
 api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-pro")
 
-st.set_page_config(page_title="VoyaGenie - Travel Planner")
-st.title("VoyaGenie ✈️🌍")
-st.markdown("_Your AI-powered travel genie for budget-smart, sustainable journeys!_")
+# Page config
+st.set_page_config(page_title="VoyaGenie - Travel Chatbot", page_icon="🧞‍♀️")
+st.title("🧞‍♀️ VoyaGenie")
+st.markdown("Your AI-powered travel genie. Just ask and your journey begins. ✈️")
 
-with st.form("trip_form"):
-    destination = st.text_input("Destination")
-    start_date = st.date_input("Start Date")
-    end_date = st.date_input("End Date")
-    budget = st.number_input("Total Budget ($)", min_value=100)
-    travel_mode = st.selectbox("Preferred Travel Mode", ["Let AI Decide", "Drive", "Fly", "Train"])
-    group_size = st.number_input("Group Size", min_value=1, step=1)
-    stay_preference = st.radio("Stay Preference", ["Flexible", "Hotel", "Airbnb/Home Rental"])
-    eco_mode = st.checkbox("Eco-Friendly Mode")
-    submit = st.form_submit_button("Plan My Trip")
+# Chat history
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-if submit and destination:
-    st.info("Generating your travel plan...")
+# Display past messages
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
 
-    user_prompt = f"""
-    Plan a trip to {destination} from {start_date} to {end_date} for {group_size} person(s) with a total budget of ${budget}.
-    Travel mode: {travel_mode}. Stay: {stay_preference}. Eco Mode: {eco_mode}.
-    Provide a budget-friendly, fun, and optionally sustainable plan with recommendations for transport, lodging, and food.
-    """
+# Chat input
+user_input = st.chat_input("Ask your travel genie something (e.g., Plan me a cheap trip to Tokyo in June)...")
 
+if user_input:
+    # Show user message
+    st.chat_message("user").markdown(user_input)
+    st.session_state.messages.append({"role": "user", "content": user_input})
+
+    # Get Gemini response
     try:
-        response = model.generate_content(user_prompt)
-        st.markdown("### ✨ Your Travel Plan")
-        st.markdown(response.text)
+        response = model.generate_content(user_input)
+        answer = response.text
     except Exception as e:
-        st.error(f"Something went wrong: {str(e)}")
+        answer = f"❌ Error: {str(e)}"
+
+    # Show assistant message
+    st.chat_message("assistant").markdown(answer)
+    st.session_state.messages.append({"role": "assistant", "content": answer})
