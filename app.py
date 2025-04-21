@@ -3,56 +3,38 @@ import os
 from dotenv import load_dotenv
 import google.generativeai as genai
 
-# Load Gemini API key from Streamlit secrets or .env
+# Load API key
 load_dotenv()
 api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-pro")
 
-# Set up Streamlit app
+# Streamlit app config
 st.set_page_config(page_title="VoyaGenie - Travel Chatbot", page_icon="🧞‍♀️")
-st.title("🧞‍♀️ VoyaGenie - Your AI Travel Genie")
-st.markdown("Ask me to plan your next trip — budget-friendly, eco-aware, and personalized. Just start typing! ✈️🌍")
+st.title("🧞‍♀️ VoyaGenie - Your AI Travel Companion")
+st.markdown("Chat with your travel genie! Ask questions step-by-step and receive helpful answers ✈️🌍")
 
-# Chat history
+# Store conversation history
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display past messages
+# Display message history
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# Get user input
-user_input = st.chat_input("Where to next? (e.g., Plan me a 5-day trip to Paris with $600 budget)")
+# Input field
+user_input = st.chat_input("Ask a travel question or make a request")
 
 if user_input:
-    # Show user's message
     st.chat_message("user").markdown(user_input)
     st.session_state.messages.append({"role": "user", "content": user_input})
 
-    # Construct intelligent prompt for Gemini
-    gemini_prompt = f"""
-You are VoyaGenie, an AI-powered travel planner. Given this user request: "{user_input}",
-generate a personalized, structured travel itinerary including:
-
-- Transportation options (flight, train, or drive) with estimated costs
-- Hotel vs Airbnb comparison with pros and cons
-- Food recommendations (based on budget)
-- Local experiences and sightseeing
-- A cost breakdown
-- If the user asks for eco-friendly travel, prioritize low-impact options
-
-Respond like a friendly assistant. Use markdown for formatting.
-"""
-
-    # Get Gemini response
     try:
-        response = model.generate_content(gemini_prompt)
+        response = model.generate_content(user_input)
         reply = response.text
     except Exception as e:
-        reply = f"⚠️ Oops! There was an error: {str(e)}"
+        reply = f"⚠️ Sorry, there was an error: {str(e)}"
 
-    # Show assistant message
     st.chat_message("assistant").markdown(reply)
     st.session_state.messages.append({"role": "assistant", "content": reply})
