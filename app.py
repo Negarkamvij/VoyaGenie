@@ -9,72 +9,74 @@ api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-pro")
 
-# App setup
-st.set_page_config(page_title="VoyaGenie - Guided Travel Chatbot", page_icon="🧞‍♀️")
+# App layout
+st.set_page_config(page_title="VoyaGenie - Smart Travel Planner", page_icon="🧞‍♀️")
 st.title("🧞‍♀️ VoyaGenie")
-st.markdown("Your smart AI travel planner — let's design your dream trip step-by-step! ✈️🌍")
+st.markdown("Your smart travel planner. Let me guide you through your perfect trip! ✈️🌍")
 
-# Initialize session state
+# Initialize memory
 if "step" not in st.session_state:
     st.session_state.step = 0
     st.session_state.destination = ""
     st.session_state.budget = ""
     st.session_state.transport = ""
     st.session_state.interests = ""
-    st.session_state.user_message = ""
-    st.session_state.plan_ready = False
 
-# Chat-style layout
+# Step-by-step Q&A
 if st.session_state.step == 0:
-    st.session_state.user_message = st.chat_input("Where would you like to go?")
-    if st.session_state.user_message:
-        st.session_state.destination = st.session_state.user_message
-        st.session_state.step += 1
+    dest = st.chat_input("Where would you like to go?")
+    if dest:
+        st.session_state.destination = dest
+        st.session_state.step = 1
 
 elif st.session_state.step == 1:
-    st.chat_message("assistant").markdown("Great! What's your total budget for this trip?")
-    st.session_state.user_message = st.chat_input("Enter your budget in USD")
-    if st.session_state.user_message:
-        st.session_state.budget = st.session_state.user_message
-        st.session_state.step += 1
+    st.chat_message("assistant").markdown(f"Great! What's your total budget for visiting **{st.session_state.destination}**?")
+    budget = st.chat_input("Enter your budget in USD")
+    if budget:
+        st.session_state.budget = budget
+        st.session_state.step = 2
 
 elif st.session_state.step == 2:
-    st.chat_message("assistant").markdown("How would you like to travel there? (e.g., plane, train, car)")
-    st.session_state.user_message = st.chat_input("Preferred transportation")
-    if st.session_state.user_message:
-        st.session_state.transport = st.session_state.user_message
-        st.session_state.step += 1
+    st.chat_message("assistant").markdown("How would you prefer to travel there? (plane, train, car, etc.)")
+    transport = st.chat_input("Preferred transportation")
+    if transport:
+        st.session_state.transport = transport
+        st.session_state.step = 3
 
 elif st.session_state.step == 3:
-    st.chat_message("assistant").markdown("What are your interests? (e.g., beaches, history, nature, shopping)")
-    st.session_state.user_message = st.chat_input("Your interests")
-    if st.session_state.user_message:
-        st.session_state.interests = st.session_state.user_message
-        st.session_state.plan_ready = True
+    st.chat_message("assistant").markdown("What are your interests? (e.g., beaches, museums, hiking, nightlife)")
+    interests = st.chat_input("Tell me what you love!")
+    if interests:
+        st.session_state.interests = interests
+        st.session_state.step = 4
 
-# When all input is collected
-if st.session_state.plan_ready:
+# Final step: Generate a plan
+if st.session_state.step == 4:
+    st.chat_message("assistant").markdown("Awesome! Planning your trip now... 🧳")
+
     prompt = f"""
-    You are an expert AI travel planner. The user wants to plan a trip to {st.session_state.destination}.
+    You are an expert travel planner named VoyaGenie. Based on the following user inputs, create a detailed travel recommendation:
 
-    Budget: ${st.session_state.budget}
-    Transportation preference: {st.session_state.transport}
-    Interests: {st.session_state.interests}
+    - Destination: {st.session_state.destination}
+    - Budget: {st.session_state.budget} USD
+    - Transportation: {st.session_state.transport}
+    - Interests: {st.session_state.interests}
 
-    Your tasks:
-    - Suggest the best and cheapest high-quality options (transport, stay, and activities)
-    - Recommend 2 or 3 places that match their interest
-    - Compare hotel vs Airbnb based on budget
-    - Provide an estimated cost breakdown
-    - If budget is very low, suggest more budget-friendly destinations nearby
-    - Include Google Maps links for directions (search format: https://www.google.com/maps/dir/ from city center to destination)
-    - Use Markdown and keep it friendly, helpful, and clearly structured
+    Your output should include:
+    - Travel overview and intro
+    - Suggested transportation method and estimated cost
+    - Hotel vs Airbnb options and price range
+    - Suggested attractions or activities matching interests
+    - Estimated cost breakdown (transport, stay, food, activities)
+    - A Google Maps direction link (e.g., https://www.google.com/maps/dir/Current+Location/{st.session_state.destination})
+    - Optional eco-friendly recommendations
+
+    Format using clear Markdown. Be friendly and informative.
     """
-    
+
     try:
         response = model.generate_content(prompt)
         st.chat_message("assistant").markdown(response.text)
+        st.session_state.step = 5  # End flow
     except Exception as e:
-        st.error(f"Error: {str(e)}")
-
-    st.session_state.step += 1  # Prevent repeat
+        st.error(f"⚠️ Error: {str(e)}")
