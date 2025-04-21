@@ -9,74 +9,98 @@ api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-pro")
 
-# App layout
-st.set_page_config(page_title="VoyaGenie - Smart Travel Planner", page_icon="🧞‍♀️")
-st.title("🧞‍♀️ VoyaGenie")
-st.markdown("Your smart travel planner. Let me guide you through your perfect trip! ✈️🌍")
+# Page setup
+st.set_page_config(page_title="VoyaGenie - Smart Travel Chatbot", page_icon="🧞‍♀️")
+st.title("🧞‍♀️ VoyaGenie - Your AI Travel Companion")
 
 # Initialize memory
-if "step" not in st.session_state:
-    st.session_state.step = 0
-    st.session_state.destination = ""
-    st.session_state.budget = ""
-    st.session_state.transport = ""
-    st.session_state.interests = ""
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+    st.session_state.destination = None
+    st.session_state.budget = None
+    st.session_state.transport = None
+    st.session_state.interests = None
+    st.session_state.awaiting = "greeting"
 
-# Step-by-step Q&A
-if st.session_state.step == 0:
-    dest = st.chat_input("Where would you like to go?")
-    if dest:
-        st.session_state.destination = dest
-        st.session_state.step = 1
+# Display conversation history
+for entry in st.session_state.chat_history:
+    with st.chat_message(entry["role"]):
+        st.markdown(entry["content"])
 
-elif st.session_state.step == 1:
-    st.chat_message("assistant").markdown(f"Great! What's your total budget for visiting **{st.session_state.destination}**?")
-    budget = st.chat_input("Enter your budget in USD")
-    if budget:
-        st.session_state.budget = budget
-        st.session_state.step = 2
+# Handle user input
+user_input = st.chat_input("Say something to your travel genie...")
 
-elif st.session_state.step == 2:
-    st.chat_message("assistant").markdown("How would you prefer to travel there? (plane, train, car, etc.)")
-    transport = st.chat_input("Preferred transportation")
-    if transport:
-        st.session_state.transport = transport
-        st.session_state.step = 3
+if user_input:
+    # Show user message
+    st.chat_message("user").markdown(user_input)
+    st.session_state.chat_history.append({"role": "user", "content": user_input})
 
-elif st.session_state.step == 3:
-    st.chat_message("assistant").markdown("What are your interests? (e.g., beaches, museums, hiking, nightlife)")
-    interests = st.chat_input("Tell me what you love!")
-    if interests:
-        st.session_state.interests = interests
-        st.session_state.step = 4
+    # --- Conversation Flow ---
 
-# Final step: Generate a plan
-if st.session_state.step == 4:
-    st.chat_message("assistant").markdown("Awesome! Planning your trip now... 🧳")
+    # GREETING
+    if st.session_state.awaiting == "greeting":
+        reply = "Hi! I'm VoyaGenie 🧞‍♀️. Where would you like to go on your next adventure?"
+        st.session_state.awaiting = "destination"
 
-    prompt = f"""
-    You are an expert travel planner named VoyaGenie. Based on the following user inputs, create a detailed travel recommendation:
+    # DESTINATION
+    elif st.session_state.awaiting == "destination":
+        st.session_state.destination = user_input
+        reply = f"Awesome! ✨ What’s your total budget for visiting **{st.session_state.destination}**?"
+        st.session_state.awaiting = "budget"
 
-    - Destination: {st.session_state.destination}
-    - Budget: {st.session_state.budget} USD
-    - Transportation: {st.session_state.transport}
-    - Interests: {st.session_state.interests}
+    # BUDGET
+    elif st.session_state.awaiting == "budget":
+        st.session_state.budget = user_input
+        reply = "Got it! How would you prefer to travel there? (e.g., plane, train, car)"
+        st.session_state.awaiting = "transport"
 
-    Your output should include:
-    - Travel overview and intro
-    - Suggested transportation method and estimated cost
-    - Hotel vs Airbnb options and price range
-    - Suggested attractions or activities matching interests
-    - Estimated cost breakdown (transport, stay, food, activities)
-    - A Google Maps direction link (e.g., https://www.google.com/maps/dir/Current+Location/{st.session_state.destination})
-    - Optional eco-friendly recommendations
+    # TRANSPORTATION
+    elif st.session_state.awaiting == "transport":
+        st.session_state.transport = user_input
+        reply = "Great! What are your interests? (e.g., beaches, history, food, shopping)"
+        st.session_state.awaiting = "interests"
 
-    Format using clear Markdown. Be friendly and informative.
-    """
+    # INTERESTS
+    elif st.session_state.awaiting == "interests":
+        st.session_state.interests = user_input
+        st.session_state.awaiting = "done"
 
-    try:
-        response = model.generate_content(prompt)
-        st.chat_message("assistant").markdown(response.text)
-        st.session_state.step = 5  # End flow
-    except Exception as e:
-        st.error(f"⚠️ Error: {str(e)}")
+        # Now we have enough info — generate the plan
+        prompt = f"""
+        You are VoyaGenie, a smart AI travel assistant. Based on the following conversation, build a personalized, budget-friendly travel plan:
+
+        Destination: {st.session_state.destination}
+        Budget: {st.session_state.budget} USD
+        Transportation: {st.session_state.transport}
+        Interests: {st.session_state.interests}
+
+        Include:
+        - Suggested travel method and cost
+        - Hotel vs Airbnb options
+        - Attractions and activities matching interests
+        - Estimated cost breakdown
+        - A Google Maps direction link (from city center to destination)
+        - Eco-friendly tips if relevant
+
+        Format clearly with markdown.
+        """
+
+        try:
+            response = model.generate_content(prompt)
+            reply = response.text
+        except Exception as e:
+            reply = f"⚠️ Sorry, something went wrong: {str(e)}"
+
+    # AFTER PLAN: Free-style chat
+    else:
+        try:
+            response = model.generate_content(user_input)
+            reply = response.text
+        except Exception as e:
+            reply = f"⚠️ Error: {str(e)}"
+
+    # Show assistant response
+    with st.chat_message("assistant"):
+        st.markdown(reply)
+
+    st.session_state.chat_history.append({"role": "assistant", "content": reply})
