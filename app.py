@@ -3,20 +3,35 @@ import os
 import dotenv
 import google.generativeai as genai
 
+# Load API key
 dotenv.load_dotenv()
 api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-# Session state setup
+# --- Session State ---
 if "chat_history" not in st.session_state:
-    st.session_state.chat_history = [
-        {"role": "genie", "text": "Hello! I’m VoyaGenie 🧞‍♂️. Ask me anything about travel—destinations, visas, budgets, seasons, or what to pack!"}
+    st.session_state.chat_history = []
+if "trip_info" not in st.session_state:
+    st.session_state.trip_info = {
+        "destination": None,
+        "time": None,
+        "interests": None,
+        "budget": None,
+        "companions": None
+    }
+if "questions_order" not in st.session_state:
+    st.session_state.questions_order = [
+        ("destination", "Where would you like to go?"),
+        ("time", "When are you planning to go?"),
+        ("interests", "What are you interested in doing there? (beaches, theme parks, nightlife, etc.)"),
+        ("budget", "What's your budget? (luxury, mid-range, budget)"),
+        ("companions", "Who are you traveling with? (solo, partner, family, friends)")
     ]
-if "chat" not in st.session_state:
-    st.session_state.chat = model.start_chat(history=[])
+if "current_question" not in st.session_state:
+    st.session_state.current_question = 0
 
-# UI Styling
+# --- UI Styling ---
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap');
@@ -42,31 +57,43 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# --- UI ---
 st.markdown("""
 <h1 style='text-align:center;'>🧞‍♂️ VoyaGenie</h1>
-<h3 style='text-align:center;'>Your AI Travel Chatbot</h3>
+<h3 style='text-align:center;'>Your Personal Travel Chatbot</h3>
 """, unsafe_allow_html=True)
 
-# Display chat history
+# Display conversation history
 for msg in st.session_state.chat_history:
     speaker = "🧞‍♂️ VoyaGenie" if msg["role"] == "genie" else "💬 You"
-    st.markdown(f"<div class='chat-response'><strong>{speaker}:</strong> {msg['text']}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='chat-response'><b>{speaker}:</b> {msg['text']}</div>", unsafe_allow_html=True)
 
-# Form for safe input handling
-with st.form(key="chat_form", clear_on_submit=True):
-    user_input = st.text_input("Ask your travel question:")
-    submit_button = st.form_submit_button("Send")
+# Handle user input with form
+with st.form("chat_form", clear_on_submit=True):
+    user_input = st.text_input("Your answer:")
+    submitted = st.form_submit_button("Send")
 
-# Handle form submission
-if submit_button and user_input:
+if submitted and user_input:
     st.session_state.chat_history.append({"role": "user", "text": user_input})
 
-    try:
-        response = st.session_state.chat.send_message(user_input)
-        reply = response.text.strip()
-    except Exception as e:
-        reply = f"Sorry, something went wrong: {e}"
+    key, question = st.session_state.questions_order[st.session_state.current_question]
+    st.session_state.trip_info[key] = user_input
+    st.session_state.current_question += 1
 
-    st.session_state.chat_history.append({"role": "genie", "text": reply})
+    if st.session_state.current_question < len(st.session_state.questions_order):
+        next_question = st.session_state.questions_order[st.session_state.current_question][1]
+        st.session_state.chat_history.append({"role": "genie", "text": next_question})
+    else:
+        summary = "Here's your trip information:\n"
+        for k, v in st.session_state.trip_info.items():
+            summary += f"- {k.capitalize()}: {v}\n"
+        summary += "\nLet me create the perfect plan for you..."
+        st.session_state.chat_history.append({"role": "genie", "text": summary})
 
-    st.rerun()  
+        try:
+            prompt = f"Create a detailed travel plan based on:\n{summary}"
+            response = model.generate_content(prompt).text
+        except Exception as e:
+            response = f"Oops, something went wrong: {e}"
+
+        st.session_state.chat_history.append({"role": "genie", "text": response})
