@@ -3,13 +3,13 @@ import os
 import dotenv
 import google.generativeai as genai
 
-# Load API key safely
+# Load API key
 dotenv.load_dotenv()
 api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-# Initialize chat state
+# Session state setup
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [
         {"role": "genie", "text": "Hello! I’m VoyaGenie 🧞‍♂️. Ask me anything about travel—destinations, visas, budgets, seasons, or what to pack!"}
@@ -48,15 +48,18 @@ st.markdown("""
 <h3 style='text-align:center;'>Your AI Travel Chatbot</h3>
 """, unsafe_allow_html=True)
 
-# Display Chat History
+# Display chat history
 for msg in st.session_state.chat_history:
     speaker = "🧞‍♂️ VoyaGenie" if msg["role"] == "genie" else "💬 You"
     st.markdown(f"<div class='chat-response'><strong>{speaker}:</strong> {msg['text']}</div>", unsafe_allow_html=True)
 
-# Handle input without form (simpler interaction)
-user_input = st.text_input("Ask your travel question here:", key="input_field")
+# Form for safe input handling
+with st.form(key="chat_form", clear_on_submit=True):
+    user_input = st.text_input("Ask your travel question:")
+    submit_button = st.form_submit_button("Send")
 
-if st.button("Send") and user_input:
+# Handle form submission
+if submit_button and user_input:
     st.session_state.chat_history.append({"role": "user", "text": user_input})
 
     try:
@@ -66,7 +69,3 @@ if st.button("Send") and user_input:
         reply = f"Sorry, something went wrong: {e}"
 
     st.session_state.chat_history.append({"role": "genie", "text": reply})
-
-    # Clear input
-    st.session_state["input_field"] = ""
-    st.experimental_rerun()
