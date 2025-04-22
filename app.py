@@ -16,28 +16,28 @@ model = genai.GenerativeModel("gemini-1.5-pro")
 # Page settings
 st.set_page_config(page_title="VoyaGenie - Smart Travel Chatbot", page_icon="🧞‍♀️")
 
-# Apply CSS for online image background
+# Display header banner with faded overlay
 st.markdown(
     """
-    <style>
-    .stApp {
-        background-image: url("https://i.imgur.com/VgmIOGm.png");
-        background-size: cover;
-        background-attachment: fixed;
-        background-repeat: no-repeat;
+    <div style="
         position: relative;
-    }
-    .stApp::before {
-        content: "";
-        position: fixed;
-        top: 0;
-        left: 0;
         width: 100%;
-        height: 100%;
-        background-color: rgba(255,255,255,0.6);
-        z-index: -1;
-    }
-    </style>
+        height: 250px;
+        background-image: url('https://i.imgur.com/VgmIOGm.png');
+        background-size: cover;
+        background-position: center;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+    ">
+        <div style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.6);
+        "></div>
+    </div>
     """,
     unsafe_allow_html=True
 )
