@@ -81,8 +81,8 @@ for role, text in st.session_state.conversation:
     icon = "🧞 VoyaGenie" if role == "genie" else "💬 You"
     st.markdown(f"<div class='chat-response'>{icon}: {text}</div>", unsafe_allow_html=True)
 
-# --- Input ---
-user_input = st.text_input("Say something to your travel genie...")
+# --- Input Box with Session Key ---
+user_input = st.text_input("Say something to your travel genie...", key="input")
 
 # --- Info Extractor ---
 def extract_info(text):
@@ -113,7 +113,7 @@ def extract_info(text):
             updates["destination"] = match.group(1).strip()
     return updates
 
-# --- Which field is missing? ---
+# --- Get Next Missing Field ---
 def get_missing_field():
     for field in st.session_state.user_data:
         if not st.session_state.user_data[field]:
@@ -163,6 +163,7 @@ if user_input:
         st.session_state.conversation.append(("genie", response))
         st.session_state.last_question_asked = None
 
-    # ✅ Only rerun if something useful happened
+    st.session_state.input = ""  # ✅ Clear input box
     if extracted or not st.session_state.last_user_input_invalid:
         st.rerun()
+
