@@ -11,7 +11,7 @@ api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-# --- FULL CSS with Comic Font applied to all elements ---
+# --- CSS Styling with Comic Font + Faded Background ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap');
@@ -51,10 +51,22 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Title and Upload ---
-st.title("🧞‍♂️ VoyaGenie - Your AI Travel Companion")
+# --- Custom Title Section ---
+st.markdown("""
+    <h1 style='text-align: center; font-weight: bold; font-size: 3rem;'>
+        🧞‍♂️ VoyaGenie
+    </h1>
+    <h3 style='text-align: center; font-weight: normal; font-size: 1.6rem; margin-top: -10px;'>
+        Travel Budget AI
+    </h3>
+""", unsafe_allow_html=True)
+
+# --- Upload Section ---
 st.markdown("📸 Upload a photo of the place you want to visit (if you don’t know its name)")
 uploaded_file = st.file_uploader("Upload a photo", type=["jpg", "jpeg", "png", "webp"])
+
+if uploaded_file:
+    st.image(uploaded_file, caption="Uploaded Destination", use_column_width=True)
 
 # --- Session State ---
 if "messages" not in st.session_state:
@@ -64,19 +76,15 @@ if "messages" not in st.session_state:
 if "just_sent" not in st.session_state:
     st.session_state.just_sent = False
 
-# --- Show Uploaded Image ---
-if uploaded_file:
-    st.image(uploaded_file, caption="Uploaded Destination", use_column_width=True)
-
-# --- Display Past Responses ---
+# --- Show past replies ---
 for msg in st.session_state.messages[1:]:
     if msg["role"] == "model":
         st.markdown(f'<div class="chat-response">🧞 VoyaGenie: {msg["parts"]}</div>', unsafe_allow_html=True)
 
-# --- Input at Bottom ---
+# --- Chat input ---
 user_input = st.text_input("Say something to your travel genie...")
 
-# --- Chat Logic ---
+# --- Chat handler ---
 def chat_response(messages):
     try:
         response = model.generate_content(messages)
@@ -84,7 +92,6 @@ def chat_response(messages):
     except Exception as e:
         return f"⚠️ Error: {str(e)}"
 
-# --- Process Input ---
 if user_input and not st.session_state.just_sent:
     st.session_state.messages.append({"role": "user", "parts": user_input})
     reply = chat_response(st.session_state.messages)
@@ -92,6 +99,6 @@ if user_input and not st.session_state.just_sent:
     st.session_state.just_sent = True
     st.rerun()
 
-# --- Reset after Rerun ---
+# --- Reset rerun flag ---
 if st.session_state.just_sent:
     st.session_state.just_sent = False
