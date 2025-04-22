@@ -11,13 +11,13 @@ api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-# --- CSS Styling with Comic Font and Faded Background ---
+# --- FULL CSS with Comic Font applied to all elements ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap');
 
-    html, body, [class*="css"] {
-        font-family: 'Comic Neue', 'Comic Sans MS', cursive, sans-serif;
+    * {
+        font-family: 'Comic Neue', 'Comic Sans MS', cursive, sans-serif !important;
     }
 
     .stApp {
@@ -33,7 +33,9 @@ st.markdown("""
         padding: 2rem 3rem;
     }
 
-    h1, label, p {
+    h1, h2, h3, h4, h5, h6,
+    p, label, input, textarea, button, .stTextInput, .stButton, .css-1n76uvr {
+        font-family: 'Comic Neue', 'Comic Sans MS', cursive, sans-serif !important;
         color: #222;
         text-shadow: 0 0 3px rgba(255,255,255,0.6);
     }
@@ -62,19 +64,19 @@ if "messages" not in st.session_state:
 if "just_sent" not in st.session_state:
     st.session_state.just_sent = False
 
-# --- Display Uploaded Image ---
+# --- Show Uploaded Image ---
 if uploaded_file:
     st.image(uploaded_file, caption="Uploaded Destination", use_column_width=True)
 
-# --- Display Past Messages ---
+# --- Display Past Responses ---
 for msg in st.session_state.messages[1:]:
     if msg["role"] == "model":
         st.markdown(f'<div class="chat-response">🧞 VoyaGenie: {msg["parts"]}</div>', unsafe_allow_html=True)
 
-# --- User Input at Bottom ---
+# --- Input at Bottom ---
 user_input = st.text_input("Say something to your travel genie...")
 
-# --- Gemini Chat Logic ---
+# --- Chat Logic ---
 def chat_response(messages):
     try:
         response = model.generate_content(messages)
@@ -82,7 +84,7 @@ def chat_response(messages):
     except Exception as e:
         return f"⚠️ Error: {str(e)}"
 
-# --- Handle Input and Rerun Safely ---
+# --- Process Input ---
 if user_input and not st.session_state.just_sent:
     st.session_state.messages.append({"role": "user", "parts": user_input})
     reply = chat_response(st.session_state.messages)
@@ -90,6 +92,6 @@ if user_input and not st.session_state.just_sent:
     st.session_state.just_sent = True
     st.rerun()
 
-# --- Reset just_sent flag after rerun ---
+# --- Reset after Rerun ---
 if st.session_state.just_sent:
     st.session_state.just_sent = False
