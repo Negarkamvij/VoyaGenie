@@ -43,30 +43,30 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- TITLE ---
+# --- Title and Upload ---
 st.title("🧞‍♂️ VoyaGenie - Your AI Travel Companion")
 st.markdown("📸 Upload a photo of the place you want to visit (if you don’t know its name)")
 uploaded_file = st.file_uploader("Upload a photo", type=["jpg", "jpeg", "png", "webp"])
 
-# --- INIT CHAT STATE ---
+# --- Session State ---
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "user", "parts": "System prompt: You are VoyaGenie, a helpful and fun AI travel assistant."}
     ]
 
-# --- SHOW UPLOADED IMAGE ---
+# --- Display Uploaded Image ---
 if uploaded_file:
     st.image(uploaded_file, caption="Uploaded Destination", use_column_width=True)
 
-# --- DISPLAY ALL MODEL RESPONSES ABOVE INPUT ---
+# --- Display Previous Model Messages ---
 for msg in st.session_state.messages[1:]:
     if msg["role"] == "model":
         st.markdown(f'<div class="chat-response">🧞 VoyaGenie: {msg["parts"]}</div>', unsafe_allow_html=True)
 
-# --- INPUT AT BOTTOM ---
+# --- Input Box at Bottom ---
 user_input = st.text_input("Say something to your travel genie...")
 
-# --- HANDLE RESPONSE ---
+# --- Chat Response Logic ---
 def chat_response(messages):
     try:
         response = model.generate_content(messages)
@@ -74,8 +74,9 @@ def chat_response(messages):
     except Exception as e:
         return f"⚠️ Error: {str(e)}"
 
+# --- Handle New Input and Trigger Rerun ---
 if user_input:
     st.session_state.messages.append({"role": "user", "parts": user_input})
     reply = chat_response(st.session_state.messages)
     st.session_state.messages.append({"role": "model", "parts": reply})
-    st.experimental_rerun()  # rerun to display new response above input
+    st.rerun()
