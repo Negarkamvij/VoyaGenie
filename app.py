@@ -9,7 +9,7 @@ api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-# --- Session State ---
+# --- Session State Setup ---
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "trip_info" not in st.session_state:
@@ -30,6 +30,8 @@ if "questions_order" not in st.session_state:
     ]
 if "current_question" not in st.session_state:
     st.session_state.current_question = 0
+if "started" not in st.session_state:
+    st.session_state.started = False
 
 # --- UI Styling ---
 st.markdown("""
@@ -57,43 +59,58 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- UI ---
+# --- Header ---
 st.markdown("""
 <h1 style='text-align:center;'>🧞‍♂️ VoyaGenie</h1>
 <h3 style='text-align:center;'>Your Personal Travel Chatbot</h3>
 """, unsafe_allow_html=True)
 
-# Display conversation history
+# --- Initial Greeting and First Question ---
+if not st.session_state.started:
+    greeting = "Hello! I’m VoyaGenie 🧞‍♂️. Let's plan your next trip together."
+    first_q = st.session_state.questions_order[0][1]
+    st.session_state.chat_history.append({"role": "genie", "text": greeting})
+    st.session_state.chat_history.append({"role": "genie", "text": first_q})
+    st.session_state.started = True
+
+# --- Display Conversation History ---
 for msg in st.session_state.chat_history:
     speaker = "🧞‍♂️ VoyaGenie" if msg["role"] == "genie" else "💬 You"
-    st.markdown(f"<div class='chat-response'><b>{speaker}:</b> {msg['text']}</div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div class='chat-response'><b>{speaker}:</b> {msg['text']}</div>",
+        unsafe_allow_html=True
+    )
 
-# Handle user input with form
+# --- Handle User Input with Form ---
 with st.form("chat_form", clear_on_submit=True):
     user_input = st.text_input("Your answer:")
     submitted = st.form_submit_button("Send")
 
 if submitted and user_input:
+    # Append user message
     st.session_state.chat_history.append({"role": "user", "text": user_input})
 
-    key, question = st.session_state.questions_order[st.session_state.current_question]
+    # Record answer and move to next
+    key, _ = st.session_state.questions_order[st.session_state.current_question]
     st.session_state.trip_info[key] = user_input
     st.session_state.current_question += 1
 
+    # Ask next or finalize
     if st.session_state.current_question < len(st.session_state.questions_order):
-        next_question = st.session_state.questions_order[st.session_state.current_question][1]
-        st.session_state.chat_history.append({"role": "genie", "text": next_question})
+        next_q = st.session_state.questions_order[st.session_state.current_question][1]
+        st.session_state.chat_history.append({"role": "genie", "text": next_q})
     else:
+        # All done: summarize and plan
         summary = "Here's your trip information:\n"
         for k, v in st.session_state.trip_info.items():
             summary += f"- {k.capitalize()}: {v}\n"
-        summary += "\nLet me create the perfect plan for you..."
+        summary += "\nGenerating your personalized travel plan..."
         st.session_state.chat_history.append({"role": "genie", "text": summary})
 
         try:
-            prompt = f"Create a detailed travel plan based on:\n{summary}"
-            response = model.generate_content(prompt).text
+            prompt = f"Create a detailed travel itinerary based on:\n{summary}"
+            plan = model.generate_content(prompt).text
         except Exception as e:
-            response = f"Oops, something went wrong: {e}"
+            plan = f"Oops, something went wrong: {e}"
 
-        st.session_state.chat_history.append({"role": "genie", "text": response})
+        st.session_state.chat_history.append({"role": "genie", "text": plan})
