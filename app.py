@@ -4,7 +4,7 @@ import dotenv
 import google.generativeai as genai
 import re
 
-# Load env
+# Load environment variables
 dotenv.load_dotenv()
 
 # Configure Gemini
@@ -12,7 +12,7 @@ api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-# --- Styling ---
+# --- CSS Styling ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap');
@@ -42,7 +42,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Title ---
+# --- Header ---
 st.markdown("""
     <h1 style='text-align: center; font-weight: bold; font-size: 3rem;'>🧞‍♂️ VoyaGenie</h1>
     <h3 style='text-align: center; font-weight: bold; font-size: 1.6rem; margin-top: -10px;'>Travel Budget AI</h3>
@@ -68,30 +68,28 @@ if "user_data" not in st.session_state:
 if "greeted" not in st.session_state:
     st.session_state.greeted = False
 
-# --- Display Conversation ---
-for msg in st.session_state.conversation:
-    role, text = msg
-    icon = "🧞 VoyaGenie" if role == "genie" else "💬 You"
-    st.markdown(f"<div class='chat-response'>{icon}: {text}</div>", unsafe_allow_html=True)
-
-# --- Greeting ---
-if not st.session_state.greeted:
+# --- Add greeting once, no rerun ---
+if not st.session_state.greeted and len(st.session_state.conversation) == 0:
     greeting = "Hello there! I’m VoyaGenie 🧞‍♂️ and I’d love to help you plan your perfect trip. Just tell me what you’re dreaming of — a destination, budget, travel length, anything!"
     st.session_state.conversation.append(("genie", greeting))
     st.session_state.greeted = True
-    st.rerun()
 
-# --- Input ---
+# --- Display previous messages ---
+for role, text in st.session_state.conversation:
+    icon = "🧞 VoyaGenie" if role == "genie" else "💬 You"
+    st.markdown(f"<div class='chat-response'>{icon}: {text}</div>", unsafe_allow_html=True)
+
+# --- Input box ---
 user_input = st.text_input("Say something to your travel genie...")
 
-# --- Smart Extraction Function ---
+# --- Extract info from user input ---
 def extract_info(text):
     updates = {}
     if not st.session_state.user_data["budget"]:
         match = re.search(r"\$\s?(\d+)", text)
         if match:
             updates["budget"] = f"${match.group(1)}"
-        elif "budget" in text.lower() or "cheap" in text.lower():
+        elif "budget" in text.lower():
             updates["budget"] = "budget-friendly"
         elif "luxury" in text.lower():
             updates["budget"] = "luxury"
@@ -113,14 +111,14 @@ def extract_info(text):
             updates["destination"] = match.group(1).strip()
     return updates
 
-# --- Ask Next Smart Question ---
+# --- Get next missing field ---
 def get_missing_field():
     for field in st.session_state.user_data:
         if not st.session_state.user_data[field]:
             return field
     return None
 
-# --- Handle Input ---
+# --- Handle input ---
 if user_input:
     st.session_state.conversation.append(("user", user_input))
     extracted = extract_info(user_input)
@@ -136,15 +134,16 @@ if user_input:
             "destination": "Where are you thinking of going?"
         }
         st.session_state.conversation.append(("genie", followups[next_missing]))
-        st.rerun()
     else:
-        prompt = "Here's what the user told me:\n"
+        # All info collected — generate plan
+        prompt = "Here’s what the user told me:\n"
         for k, v in st.session_state.user_data.items():
             prompt += f"- {k.capitalize()}: {v}\n"
-        prompt += "\nNow generate a helpful, friendly travel recommendation."
+        prompt += "\nPlease give a helpful, friendly travel recommendation based on this."
 
-        with st.spinner("Planning your perfect trip..."):
+        with st.spinner("VoyaGenie is planning your adventure..."):
             response = model.generate_content(prompt).text
 
         st.session_state.conversation.append(("genie", response))
-        st.rerun()
+
+    st.rerun()
