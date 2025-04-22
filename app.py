@@ -52,7 +52,7 @@ uploaded_file = st.file_uploader("Upload a photo", type=["jpg", "jpeg", "png", "
 if uploaded_file:
     st.image(uploaded_file, caption="Uploaded Destination", use_column_width=True)
 
-# --- Session State Setup ---
+# --- Session State ---
 if "conversation" not in st.session_state:
     st.session_state.conversation = []
 if "user_data" not in st.session_state:
@@ -76,15 +76,15 @@ if not st.session_state.greeted and len(st.session_state.conversation) == 0:
     st.session_state.conversation.append(("genie", greeting))
     st.session_state.greeted = True
 
-# --- Display Conversation ---
+# --- Display Chat History ---
 for role, text in st.session_state.conversation:
     icon = "🧞 VoyaGenie" if role == "genie" else "💬 You"
     st.markdown(f"<div class='chat-response'>{icon}: {text}</div>", unsafe_allow_html=True)
 
-# --- Input Box ---
+# --- Input ---
 user_input = st.text_input("Say something to your travel genie...")
 
-# --- Extract Info ---
+# --- Info Extractor ---
 def extract_info(text):
     updates = {}
     if not st.session_state.user_data["budget"]:
@@ -113,14 +113,14 @@ def extract_info(text):
             updates["destination"] = match.group(1).strip()
     return updates
 
-# --- Which Field is Missing ---
+# --- Which field is missing? ---
 def get_missing_field():
     for field in st.session_state.user_data:
         if not st.session_state.user_data[field]:
             return field
     return None
 
-# --- Follow-Up Prompts ---
+# --- Followup Prompts ---
 followups = {
     "budget": "What’s your budget? (Luxury, mid-range, or budget-friendly?)",
     "duration": "How long will your trip be?",
@@ -139,7 +139,6 @@ if user_input:
     next_missing = get_missing_field()
 
     if extracted:
-        # Reset invalid flag if useful input
         st.session_state.last_question_asked = None
         st.session_state.last_user_input_invalid = False
 
@@ -148,7 +147,7 @@ if user_input:
             q = followups[next_missing]
             st.session_state.conversation.append(("genie", q))
             st.session_state.last_question_asked = next_missing
-        elif st.session_state.last_user_input_invalid is False:
+        elif not st.session_state.last_user_input_invalid:
             st.session_state.conversation.append(("genie", "Tell me more about your travel plans — like your budget or where you want to go!"))
             st.session_state.last_user_input_invalid = True
     else:
@@ -164,4 +163,6 @@ if user_input:
         st.session_state.conversation.append(("genie", response))
         st.session_state.last_question_asked = None
 
-    st.rerun()
+    # ✅ Only rerun if something useful happened
+    if extracted or not st.session_state.last_user_input_invalid:
+        st.rerun()
