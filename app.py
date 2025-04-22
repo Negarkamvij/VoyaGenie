@@ -71,13 +71,26 @@ st.markdown("""
 st.markdown("📸 Upload a photo of the place you want to visit (if you don’t know the name):")
 uploaded_file = st.file_uploader("Choose an image", type=["jpg","jpeg","png","webp"])
 if uploaded_file and st.session_state.trip_info['destination'] is None:
-    # Use uploaded photo as indication of destination
+    # Recognize uploaded image as destination
     st.session_state.chat_history.append({"role":"user","text":"[Uploaded a photo of the destination]"})
-    st.session_state.trip_info['destination'] = "Photo provided"
-    # Skip destination question
-    if st.session_state.current_question == 0:
+    image_bytes = uploaded_file.read()
+    try:
+        # Ask Gemini to identify the place in the image
+        response = model.generate_content([
+            {"role":"user","parts":[{"mime_type": uploaded_file.type, "binary": image_bytes}]},
+            {"role":"user","parts":"Please identify the place shown in this image."}
+        ])
+        place_name = response.text.strip()
+    except Exception as e:
+        place_name = None
+    if place_name:
+        st.session_state.trip_info['destination'] = place_name
+        # Advance past destination question
+        st.session_state.chat_history.append({"role":"genie","text":f"I believe this is {place_name}. When are you planning to go?"})
         st.session_state.current_question = 1
-    st.session_state.chat_history.append({"role":"genie","text": st.session_state.questions_order[st.session_state.current_question][1]})
+    else:
+        st.session_state.chat_history.append({"role":"genie","text":"Sorry, I couldn't identify that place. Where would you like to go?"})
+        st.session_state.current_question = 0
     st.session_state.clear_input_flag = True
 
 # --- Initial Greeting and First Question ---
