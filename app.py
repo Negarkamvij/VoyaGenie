@@ -69,6 +69,8 @@ if "last_question_asked" not in st.session_state:
     st.session_state.last_question_asked = None
 if "last_user_input_invalid" not in st.session_state:
     st.session_state.last_user_input_invalid = False
+if "user_message" not in st.session_state:
+    st.session_state.user_message = ""
 
 # --- Greeting ---
 if not st.session_state.greeted and len(st.session_state.conversation) == 0:
@@ -81,8 +83,8 @@ for role, text in st.session_state.conversation:
     icon = "🧞 VoyaGenie" if role == "genie" else "💬 You"
     st.markdown(f"<div class='chat-response'>{icon}: {text}</div>", unsafe_allow_html=True)
 
-# --- Input Box with Session Key ---
-user_input = st.text_input("Say something to your travel genie...", key="input")
+# --- Input Box ---
+user_input = st.text_input("Say something to your travel genie...", key="user_message")
 
 # --- Info Extractor ---
 def extract_info(text):
@@ -163,7 +165,6 @@ if user_input:
         st.session_state.conversation.append(("genie", response))
         st.session_state.last_question_asked = None
 
-    st.session_state.input = ""  # ✅ Clear input box
+    st.session_state.user_message = ""  # ✅ safe way to clear input
     if extracted or not st.session_state.last_user_input_invalid:
         st.rerun()
-
