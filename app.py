@@ -3,15 +3,15 @@ import os
 import dotenv
 import google.generativeai as genai
 
-# Load .env
+# Load environment variables
 dotenv.load_dotenv()
 
-# Configure Gemini
+# Configure Gemini API
 api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-# 💡 CSS for background + content overlay
+# --- Faded Background + Styled Container ---
 st.markdown("""
     <style>
     .stApp {
@@ -33,29 +33,29 @@ st.markdown("""
         z-index: -1;
     }
 
-    .content {
-        background: rgba(255, 255, 255, 0.88);
+    .glass {
+        background-color: rgba(255, 255, 255, 0.9);
         padding: 2rem;
-        border-radius: 16px;
-        max-width: 800px;
+        border-radius: 20px;
+        max-width: 850px;
         margin: 3rem auto;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        z-index: 10;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         position: relative;
+        z-index: 1;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# ✨ CONTENT STARTS
-st.markdown('<div class="content">', unsafe_allow_html=True)
+# --- Start of visible content ---
+st.markdown('<div class="glass">', unsafe_allow_html=True)
 
-st.markdown("<h1 style='text-align: center;'>🧞‍♂️ VoyaGenie - Your AI Travel Companion</h1>", unsafe_allow_html=True)
+# ✅ These are Streamlit-rendered components — will force visibility
+st.title("🧞‍♂️ VoyaGenie - Your AI Travel Companion")
 st.markdown("📸 Upload a photo of the place you want to visit (if you don’t know its name)")
 
-# Upload image
 uploaded_file = st.file_uploader("Drag and drop file here", type=["jpg", "jpeg", "png", "webp"])
 
-# Chat response
+# Gemini chat function
 def chat_response(messages):
     try:
         response = model.generate_content(messages)
@@ -63,23 +63,22 @@ def chat_response(messages):
     except Exception as e:
         return f"⚠️ Error: {str(e)}"
 
-# Session setup
+# Start conversation history
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "user", "parts": "System prompt: You are VoyaGenie, an expert AI travel planner that suggests fun and personalized ideas."}
     ]
 
-# User input
 user_input = st.text_input("Say something to your travel genie...")
 
 if user_input:
     st.session_state.messages.append({"role": "user", "parts": user_input})
     response = chat_response(st.session_state.messages)
     st.session_state.messages.append({"role": "model", "parts": response})
-    st.write(f"🧞 VoyaGenie: {response}")
+    st.markdown(f"🧞 VoyaGenie: {response}")
 
-# Show uploaded image
 if uploaded_file:
     st.image(uploaded_file, caption="Uploaded Destination", use_column_width=True)
 
-st.markdown("</div>", unsafe_allow_html=True)
+# --- Close the div at the very end ---
+st.markdown('</div>', unsafe_allow_html=True)
