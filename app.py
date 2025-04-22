@@ -46,21 +46,27 @@ st.markdown("""
 # --- Header ---
 st.markdown("""
 <h1 style='text-align:center;'>🧞‍♂️ VoyaGenie</h1>
-<h3 style='text-align:center;'>Your Personal Travel Chatbot</h3>
+<h3 style='text-align:center;'>Your Eco-Aware Travel Planner</h3>
 """, unsafe_allow_html=True)
 
-# --- Photo Upload Preview ---
-st.markdown("📸 Upload a photo of the place you want to visit (optional):")
-uploaded_file = st.file_uploader("Choose an image", type=["jpg","jpeg","png","webp"])
-if uploaded_file:
-    st.image(uploaded_file, caption="Uploaded destination (preview)", use_column_width=True)
+# --- Eco Mode Toggle ---
+eco_mode = st.sidebar.checkbox("Eco-Friendly Mode", value=False, help="Prioritize sustainable options: green transport, eco-certified stays, and local dining.")
+
+# --- Photo Upload (optional) ---
+st.sidebar.markdown("📸 Upload a photo of the place if unknown:")
+uploaded_file = st.sidebar.file_uploader("Image", type=["jpg","jpeg","png","webp"])
+if uploaded_file and st.session_state.trip_info['destination'] is None:
+    # preview only
+    st.sidebar.image(uploaded_file, caption="Preview uploaded destination", use_column_width=True)
+    st.session_state.trip_info['destination'] = "[from photo]"
+    # skip asking destination
+    st.session_state.current_question = 1
 
 # --- Initial Greeting and First Question ---
 if not st.session_state.started:
-    greeting = "Hello! I’m VoyaGenie 🧞‍♂️. Let's plan your next trip together."
-    first_q = st.session_state.questions_order[0][1]
-    st.session_state.chat_history.append({"role":"genie","text":greeting})
-    st.session_state.chat_history.append({"role":"genie","text":first_q})
+    st.session_state.chat_history.append({"role":"genie","text":"Hello! I’m VoyaGenie 🧞‍♂️. Let’s create your perfect trip."})
+    first_q = st.session_state.questions_order[st.session_state.current_question][1]
+    st.session_state.chat_history.append({"role":"genie","text": first_q})
     st.session_state.started = True
 
 # --- Display Chat History ---
@@ -73,25 +79,29 @@ with st.form('input_form', clear_on_submit=True):
     user_input = st.text_input('Your answer:')
     submit = st.form_submit_button('Send')
 
+# --- Handle Input & Flow ---
 if submit and user_input:
-    # Append user message
     st.session_state.chat_history.append({"role":"user","text":user_input})
-    # Record answer and advance
     key, _ = st.session_state.questions_order[st.session_state.current_question]
     st.session_state.trip_info[key] = user_input
     st.session_state.current_question += 1
-    # Ask next or finalize
+
     if st.session_state.current_question < len(st.session_state.questions_order):
         next_q = st.session_state.questions_order[st.session_state.current_question][1]
-        st.session_state.chat_history.append({"role":"genie","text":next_q})
+        st.session_state.chat_history.append({"role":"genie","text": next_q})
     else:
-        summary = "Here's your trip info:\n"
+        # All Qs answered -> summarize & plan
+        summary = "Trip Details:\n"
         for k,v in st.session_state.trip_info.items(): summary += f"- {k.capitalize()}: {v}\n"
-        summary += "\nGenerating your personalized travel plan..."
-        st.session_state.chat_history.append({"role":"genie","text":summary})
+        if eco_mode:
+            summary += "\nEco-Mode: Enabled (providing sustainable options)\n"
+        else:
+            summary += "\nEco-Mode: Disabled\n"
+        st.session_state.chat_history.append({"role":"genie","text": summary})
+        # Generate plan
+        prompt = f"You are an eco-aware travel planner. {summary} Provide a detailed itinerary, compare transport and stays, give a cost breakdown, and highlight sustainable recommendations if Eco-Mode is on."  
         try:
-            prompt = "Create a detailed travel itinerary based on:\n" + summary
             plan = model.generate_content(prompt).text
         except Exception as e:
-            plan = f"Oops, something went wrong: {e}"
-        st.session_state.chat_history.append({"role":"genie","text":plan})
+            plan = f"Error generating plan: {e}"
+        st.session_state.chat_history.append({"role":"genie","text": plan})
