@@ -3,46 +3,51 @@ import os
 import dotenv
 import google.generativeai as genai
 
-# Load .env variables (like API_KEY)
+# Load environment variables
 dotenv.load_dotenv()
 
-# Configure Google Generative AI
+# Configure Gemini API
 api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-# --- Set full-page background image ---
+# --- Background Style with Faded Image ---
 st.markdown(
-    f"""
+    """
     <style>
-    .stApp {{
-        background-image: url("https://i.imgur.com/VgmIOGm.png");
-        background-attachment: fixed;
-        background-size: cover;
-        background-repeat: no-repeat;
-        background-position: center;
-    }}
+    .stApp {
+        position: relative;
+        background: none;
+    }
 
-    .main > div {{
-        background-color: rgba(255, 255, 255, 0.8);
-        padding: 2rem;
-        border-radius: 12px;
-        backdrop-filter: blur(4px);
-    }}
+    .stApp::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-image: url("https://i.imgur.com/C6p1a31.png");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        opacity: 0.3;  /* Controls the fade effect */
+        z-index: -1;
+    }
 
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# --- Title and Header ---
+# --- Header Section ---
 st.markdown("<h1 style='text-align: center;'>🧞‍♂️ VoyaGenie - Your AI Travel Companion</h1>", unsafe_allow_html=True)
 st.markdown("📸 Upload a photo of the place you want to visit (if you don’t know its name)")
 
 # --- Image Upload ---
 uploaded_file = st.file_uploader("Drag and drop file here", type=["jpg", "jpeg", "png", "webp"])
 
-# --- Chat Function ---
+# --- Chat Response Logic ---
 def chat_response(messages):
     try:
         response = model.generate_content(messages)
@@ -50,13 +55,13 @@ def chat_response(messages):
     except Exception as e:
         return f"⚠️ Error: {str(e)}"
 
-# --- Session State for Conversation ---
+# --- Initialize Conversation ---
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "user", "parts": "System prompt: You are VoyaGenie, an expert travel planner who gives unique travel ideas based on uploaded images or user questions."}
+        {"role": "user", "parts": "System prompt: You are VoyaGenie, an expert AI travel planner that suggests fun and personalized ideas."}
     ]
 
-# --- User Input Chat Box ---
+# --- Chat Box ---
 user_input = st.text_input("Say something to your travel genie...")
 
 if user_input:
@@ -65,6 +70,6 @@ if user_input:
     st.session_state.messages.append({"role": "model", "parts": response})
     st.write(f"🧞 VoyaGenie: {response}")
 
-# --- Display uploaded file if any ---
+# --- Show Uploaded Image ---
 if uploaded_file:
     st.image(uploaded_file, caption="Uploaded Destination", use_column_width=True)
