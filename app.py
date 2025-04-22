@@ -11,7 +11,7 @@ api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-# --- CSS Styling with Comic Font, Faded Background, and ALL BOLD ---
+# --- Comic Font & Background CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap');
@@ -34,14 +34,6 @@ st.markdown("""
         padding: 2rem 3rem;
     }
 
-    h1, h2, h3, h4, h5, h6,
-    p, label, input, textarea, button, .stTextInput, .stButton, .css-1n76uvr {
-        font-family: 'Comic Neue', 'Comic Sans MS', cursive, sans-serif !important;
-        font-weight: bold !important;
-        color: #222;
-        text-shadow: 0 0 3px rgba(255,255,255,0.6);
-    }
-
     .chat-response {
         background-color: rgba(255, 255, 255, 0.6);
         padding: 1rem;
@@ -53,7 +45,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Custom Bold Title ---
+# --- Custom Title ---
 st.markdown("""
     <h1 style='text-align: center; font-weight: bold; font-size: 3rem;'>
         🧞‍♂️ VoyaGenie
@@ -70,37 +62,42 @@ uploaded_file = st.file_uploader("Upload a photo", type=["jpg", "jpeg", "png", "
 if uploaded_file:
     st.image(uploaded_file, caption="Uploaded Destination", use_column_width=True)
 
-# --- Session State ---
-if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "user", "parts": "System prompt: You are VoyaGenie, a helpful and fun AI travel assistant."}
-    ]
-if "just_sent" not in st.session_state:
-    st.session_state.just_sent = False
+# --- Setup state ---
+questions = [
+    "What's your budget? (Luxury, mid-range, budget-friendly)",
+    "How long will you be in your destination? (A weekend, week, etc.)",
+    "Who are you traveling with? (Solo, partner, family, friends?)",
+    "What are your interests? (Beaches, nightlife, food, culture, etc.)"
+]
 
-# --- Show past replies ---
-for msg in st.session_state.messages[1:]:
-    if msg["role"] == "model":
-        st.markdown(f'<div class="chat-response">🧞 VoyaGenie: {msg["parts"]}</div>', unsafe_allow_html=True)
+if "step" not in st.session_state:
+    st.session_state.step = 0
 
-# --- Input at Bottom ---
-user_input = st.text_input("Say something to your travel genie...")
+if "answers" not in st.session_state:
+    st.session_state.answers = []
 
-# --- Chat Logic ---
-def chat_response(messages):
-    try:
-        response = model.generate_content(messages)
-        return response.text
-    except Exception as e:
-        return f"⚠️ Error: {str(e)}"
+# --- Show previous Q&A as chat bubbles ---
+for i in range(len(st.session_state.answers)):
+    st.markdown(f'<div class="chat-response">🧞 VoyaGenie: {questions[i]}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="chat-response">💬 You: {st.session_state.answers[i]}</div>', unsafe_allow_html=True)
 
-if user_input and not st.session_state.just_sent:
-    st.session_state.messages.append({"role": "user", "parts": user_input})
-    reply = chat_response(st.session_state.messages)
-    st.session_state.messages.append({"role": "model", "parts": reply})
-    st.session_state.just_sent = True
-    st.rerun()
+# --- Ask next question ---
+if st.session_state.step < len(questions):
+    st.markdown(f'<div class="chat-response">🧞 VoyaGenie: {questions[st.session_state.step]}</div>', unsafe_allow_html=True)
+    user_input = st.text_input("Your answer:", key=f"input_{st.session_state.step}")
 
-# --- Reset flag after rerun ---
-if st.session_state.just_sent:
-    st.session_state.just_sent = False
+    if user_input:
+        st.session_state.answers.append(user_input)
+        st.session_state.step += 1
+        st.rerun()
+
+else:
+    # --- When all answers are collected ---
+    prompt = "Here are the user's travel preferences:\n"
+    prompt += "\n".join([f"{q} {a}" for q, a in zip(questions, st.session_state.answers)])
+    prompt += "\nBased on these, suggest a travel plan."
+
+    with st.spinner("Planning your trip..."):
+        response = model.generate_content(prompt).text
+
+    st.markdown(f'<div class="chat-response">🧞 VoyaGenie: {response}</div>', unsafe_allow_html=True)
