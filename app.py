@@ -80,4 +80,3 @@ if submitted and user_input:
                 st.session_state.chat_history.append({"role": "genie", "text": result})
             except Exception as e:
                 st.session_state.chat_history.append({"role": "genie", "text": f"Oops! Couldn't plan it right now: {e}"})
-```
