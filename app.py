@@ -3,13 +3,14 @@ import os
 import dotenv
 import google.generativeai as genai
 
-# Load env variables
+# Load API key
 dotenv.load_dotenv()
 api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
+chat = model.start_chat(history=[])
 
-# --- CSS Styling ---
+# --- UI Styling ---
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap');
@@ -25,9 +26,6 @@ st.markdown("""
     background-repeat: no-repeat;
     background-attachment: fixed;
 }
-.block-container {
-    padding: 2rem 3rem;
-}
 .chat-response {
     background-color: rgba(255, 255, 255, 0.6);
     padding: 1rem;
@@ -41,48 +39,34 @@ st.markdown("""
 
 # --- Title ---
 st.markdown("""
-<h1 style='text-align: center; font-weight: bold; font-size: 3rem;'>🧞‍♂️ VoyaGenie</h1>
-<h3 style='text-align: center; font-weight: bold; font-size: 1.6rem; margin-top: -10px;'>Ask Me Anything About Travel</h3>
+<h1 style='text-align: center; font-weight: bold;'>🧞‍♂️ VoyaGenie</h1>
+<h3 style='text-align: center;'>Your AI Travel Chatbot</h3>
 """, unsafe_allow_html=True)
 
-# --- Image Upload (optional) ---
-st.markdown("📸 Upload a photo of your dream destination:")
-uploaded_file = st.file_uploader("Upload a photo", type=["jpg", "jpeg", "png", "webp"])
-if uploaded_file:
-    st.image(uploaded_file, caption="Uploaded Destination", use_column_width=True)
-
-# --- Session State ---
-if "conversation" not in st.session_state:
-    st.session_state.conversation = [("genie", "Hello there! I’m VoyaGenie 🧞‍♂️. Ask me anything about your trip — destinations, budgets, activities, or when to go!")]
-
-if "clear_input_flag" not in st.session_state:
-    st.session_state.clear_input_flag = False
-
-# --- Clear input on rerun ---
-if st.session_state.clear_input_flag:
-    st.session_state.clear_input_flag = False
-    st.experimental_rerun()
-
-# --- Input box ---
-user_input = st.text_input("Ask me anything about travel...", key="user_message")
+# --- Chat state ---
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = [
+        {"role": "genie", "text": "Hello! I’m VoyaGenie. Ask me anything about travel — destinations, visas, when to go, budgets, or what to pack!"}
+    ]
+if "chat" not in st.session_state:
+    st.session_state.chat = model.start_chat(history=[])
 
 # --- Display chat history ---
-for role, msg in st.session_state.conversation:
-    icon = "🧞 VoyaGenie" if role == "genie" else "💬 You"
-    st.markdown(f"<div class='chat-response'>{icon}: {msg}</div>", unsafe_allow_html=True)
+for msg in st.session_state.chat_history:
+    name = "🧞 VoyaGenie" if msg["role"] == "genie" else "💬 You"
+    st.markdown(f"<div class='chat-response'>{name}: {msg['text']}</div>", unsafe_allow_html=True)
 
-# --- Handle input and response ---
+# --- Input ---
+user_input = st.text_input("Ask your travel question here...")
+
 if user_input:
-    st.session_state.conversation.append(("user", user_input))
+    st.session_state.chat_history.append({"role": "user", "text": user_input})
 
-    # Send to Gemini
-    messages = [{"role": "user", "parts": user_input}]
     try:
-        response = model.generate_content(messages)
-        answer = response.text.strip()
+        response = st.session_state.chat.send_message(user_input)
+        reply = response.text.strip()
     except Exception as e:
-        answer = f"Oops, I had trouble answering that: {e}"
+        reply = f"Oops, I had trouble replying: {e}"
 
-    st.session_state.conversation.append(("genie", answer))
-
-    st.session_state.clear_input_flag = True  # clear input next time
+    st.session_state.chat_history.append({"role": "genie", "text": reply})
+    st.experimental_rerun()
