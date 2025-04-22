@@ -16,29 +16,15 @@ model = genai.GenerativeModel("gemini-1.5-pro")
 # Page settings
 st.set_page_config(page_title="VoyaGenie - Smart Travel Chatbot", page_icon="🧞‍♀️")
 
-# Use a cloud-safe background image
-st.markdown("""
-    <style>
-    .stApp {
-        background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=80');
-        background-size: cover;
-        background-attachment: fixed;
-        background-repeat: no-repeat;
-        position: relative;
-    }
-
-    .stApp::before {
-        content: "";
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(255, 255, 255, 0.7);
-        z-index: -1;
-    }
-    </style>
-""", unsafe_allow_html=True)
+# Safe background banner with overlay
+st.markdown(
+    """
+    <div style="position: relative; width: 100%; height: 300px; background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=80'); background-size: cover; background-position: center; border-radius: 10px; margin-bottom: 2rem;">
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255,255,255,0.6);"></div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 st.title("🧞‍♀️ VoyaGenie - Your AI Travel Companion")
 
