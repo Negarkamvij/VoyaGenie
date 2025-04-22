@@ -55,12 +55,12 @@ eco_mode = st.sidebar.checkbox("Eco-Friendly Mode", value=False, help="Prioritiz
 # --- Photo Upload (optional) ---
 st.sidebar.markdown("📸 Upload a photo of the place if unknown:")
 uploaded_file = st.sidebar.file_uploader("Image", type=["jpg","jpeg","png","webp"])
-if uploaded_file and st.session_state.trip_info['destination'] is None:
-    # preview only
+if uploaded_file:
     st.sidebar.image(uploaded_file, caption="Preview uploaded destination", use_column_width=True)
-    st.session_state.trip_info['destination'] = "[from photo]"
-    # skip asking destination
-    st.session_state.current_question = 1
+    if st.session_state.trip_info['destination'] is None:
+        st.session_state.trip_info['destination'] = "[from photo]"
+        if st.session_state.current_question == 0:
+            st.session_state.current_question += 1
 
 # --- Initial Greeting and First Question ---
 if not st.session_state.started:
