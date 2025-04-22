@@ -16,7 +16,7 @@ model = genai.GenerativeModel("gemini-1.5-pro")
 # Page settings
 st.set_page_config(page_title="VoyaGenie - Smart Travel Chatbot", page_icon="🧞‍♀️")
 
-# Faded background with overlay
+# Faded background with overlay (PNG version)
 st.markdown("""
     <style>
     .stApp {
