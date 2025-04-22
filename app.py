@@ -76,4 +76,89 @@ if not st.session_state.greeted and len(st.session_state.conversation) == 0:
 
 # --- Display chat history ---
 for role, text in st.session_state.conversation:
-    icon = "🧞 VoyaGenie" if
+    icon = "🧞 VoyaGenie" if role == "genie" else "💬 You"
+    st.markdown(f"<div class='chat-response'>{icon}: {text}</div>", unsafe_allow_html=True)
+
+# --- Input ---
+user_input = st.text_input("Say something to your travel genie...")
+
+# --- Info Extractor ---
+def extract_info(text):
+    updates = {}
+    if not st.session_state.user_data["budget"]:
+        match = re.search(r"\$\s?(\d+)", text)
+        if match:
+            updates["budget"] = f"${match.group(1)}"
+        elif "budget" in text.lower():
+            updates["budget"] = "budget-friendly"
+        elif "luxury" in text.lower():
+            updates["budget"] = "luxury"
+    if not st.session_state.user_data["duration"]:
+        match = re.search(r"(\d+)\s?(days?|weeks?)", text.lower())
+        if match:
+            updates["duration"] = match.group(0)
+    if not st.session_state.user_data["companions"]:
+        for word in ["solo", "partner", "family", "friends"]:
+            if word in text.lower():
+                updates["companions"] = word
+    if not st.session_state.user_data["interests"]:
+        interests = re.findall(r"(beaches|food|culture|nightlife|shopping|museums|nature)", text.lower())
+        if interests:
+            updates["interests"] = ", ".join(set(interests))
+    if not st.session_state.user_data["destination"]:
+        match = re.search(r"in ([A-Za-z\s]+)", text)
+        if match:
+            updates["destination"] = match.group(1).strip()
+    return updates
+
+# --- Which field is missing? ---
+def get_missing_field():
+    for field in st.session_state.user_data:
+        if not st.session_state.user_data[field]:
+            return field
+    return None
+
+followups = {
+    "budget": "What’s your budget? (Luxury, mid-range, or budget-friendly?)",
+    "duration": "How long will your trip be?",
+    "companions": "Who are you traveling with? (Solo, partner, family, friends?)",
+    "interests": "What are your interests? (Food, beaches, nightlife, museums, etc.)",
+    "destination": "Where are you thinking of going?"
+}
+
+# --- Process user input ---
+if user_input:
+    st.session_state.conversation.append(("user", user_input))
+
+    extracted = extract_info(user_input)
+    st.session_state.user_data.update({k: v for k, v in extracted.items() if v})
+
+    next_missing = get_missing_field()
+
+    if extracted:
+        # If something was extracted, reset last asked
+        st.session_state.last_question_asked = None
+
+    if next_missing:
+        if st.session_state.last_question_asked != next_missing:
+            # Only ask if not already asked
+            q = followups[next_missing]
+            st.session_state.conversation.append(("genie", q))
+            st.session_state.last_question_asked = next_missing
+        else:
+            # If user typed fluff like "hi", gently prompt
+            st.session_state.conversation.append(("genie", "Tell me more about your travel plans — like your budget or where you want to go!"))
+    else:
+        # All info collected — generate travel plan
+        prompt = "Here’s what the user told me:\n"
+        for k, v in st.session_state.user_data.items():
+            prompt += f"- {k.capitalize()}: {v}\n"
+        prompt += "\nPlease give a helpful, friendly travel recommendation based on this."
+
+        with st.spinner("VoyaGenie is crafting your dream getaway..."):
+            response = model.generate_content(prompt).text
+
+        st.session_state.conversation.append(("genie", response))
+        st.session_state.last_question_asked = None
+
+    st.rerun()
