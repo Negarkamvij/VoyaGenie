@@ -46,7 +46,7 @@ st.markdown("""
     <h3 style='text-align: center; font-weight: bold; font-size: 1.6rem; margin-top: -10px;'>Travel Budget AI</h3>
 """, unsafe_allow_html=True)
 
-# --- Upload Image ---
+# --- Image Upload ---
 st.markdown("📸 Upload a photo of the place you want to visit (if you don’t know its name)")
 uploaded_file = st.file_uploader("Upload a photo", type=["jpg", "jpeg", "png", "webp"])
 if uploaded_file:
@@ -69,26 +69,24 @@ if "last_question_asked" not in st.session_state:
     st.session_state.last_question_asked = None
 if "last_user_input_invalid" not in st.session_state:
     st.session_state.last_user_input_invalid = False
-if "user_message" not in st.session_state:
-    st.session_state.user_message = ""
 if "clear_input_flag" not in st.session_state:
     st.session_state.clear_input_flag = False
 
-# --- Clear input if needed ---
+# --- Clear input on rerun ---
 if st.session_state.clear_input_flag:
-    st.session_state.user_message = ""
     st.session_state.clear_input_flag = False
+    st.experimental_rerun()
 
-# --- Input Box ---
+# --- Input box ---
 user_input = st.text_input("Say something to your travel genie...", key="user_message")
 
-# --- Greeting ---
+# --- Greet on first visit ---
 if not st.session_state.greeted and len(st.session_state.conversation) == 0:
     greeting = "Hello there! I’m VoyaGenie 🧞‍♂️ and I’d love to help you plan your perfect trip. Just tell me what you’re dreaming of — a destination, budget, travel length, anything!"
     st.session_state.conversation.append(("genie", greeting))
     st.session_state.greeted = True
 
-# --- Display Chat History ---
+# --- Display conversation ---
 for role, text in st.session_state.conversation:
     icon = "🧞 VoyaGenie" if role == "genie" else "💬 You"
     st.markdown(f"<div class='chat-response'>{icon}: {text}</div>", unsafe_allow_html=True)
@@ -122,14 +120,14 @@ def extract_info(text):
             updates["destination"] = match.group(1).strip()
     return updates
 
-# --- Get Next Missing Field ---
+# --- Get Missing Field ---
 def get_missing_field():
     for field in st.session_state.user_data:
         if not st.session_state.user_data[field]:
             return field
     return None
 
-# --- Followup Prompts ---
+# --- Follow-up Questions ---
 followups = {
     "budget": "What’s your budget? (Luxury, mid-range, or budget-friendly?)",
     "duration": "How long will your trip be?",
@@ -172,6 +170,4 @@ if user_input:
         st.session_state.conversation.append(("genie", response))
         st.session_state.last_question_asked = None
 
-    st.session_state.clear_input_flag = True  # ✅ Clear input on next run
-    if extracted or not st.session_state.last_user_input_invalid:
-        st.rerun()
+    st.session_state.clear_input_flag = True  # ✅ Schedule input reset
