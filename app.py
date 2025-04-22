@@ -1,7 +1,6 @@
 import streamlit as st
 import os
 import io
-import base64
 from PIL import Image
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -17,26 +16,18 @@ model = genai.GenerativeModel("gemini-1.5-pro")
 # Page settings
 st.set_page_config(page_title="VoyaGenie - Smart Travel Chatbot", page_icon="🧞‍♀️")
 
-# Convert background image to base64
-def get_base64(file_path):
-    with open(file_path, "rb") as f:
-        data = f.read()
-    return base64.b64encode(data).decode()
-
-bg_img = get_base64("background.png")
-
-# Apply CSS for faded background
+# Public background image (hosted on Imgur)
 st.markdown(
-    f"""
+    """
     <style>
-    .stApp {{
-        background-image: url("data:image/png;base64,{bg_img}");
+    .stApp {
+        background-image: url("https://i.imgur.com/VgmIOGm.png");
         background-size: cover;
         background-attachment: fixed;
         background-repeat: no-repeat;
         position: relative;
-    }}
-    .stApp::before {{
+    }
+    .stApp::before {
         content: "";
         position: fixed;
         top: 0;
@@ -45,7 +36,7 @@ st.markdown(
         height: 100%;
         background-color: rgba(255,255,255,0.6);
         z-index: -1;
-    }}
+    }
     </style>
     """,
     unsafe_allow_html=True
