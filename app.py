@@ -101,7 +101,7 @@ for msg in st.session_state.chat_history:
 if st.session_state.clear_input_flag:
     st.session_state.clear_input_flag = False
     st.session_state.user_input = ""
-    st.experimental_rerun()
+    st.rerun()
 
 # --- User Input via Enter ---
 user_input = st.text_input("Your answer:", key="user_input")
