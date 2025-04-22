@@ -46,7 +46,7 @@ st.markdown("""
     <h3 style='text-align: center; font-weight: bold; font-size: 1.6rem; margin-top: -10px;'>Travel Budget AI</h3>
 """, unsafe_allow_html=True)
 
-# --- Image Upload ---
+# --- Upload Image ---
 st.markdown("📸 Upload a photo of the place you want to visit (if you don’t know its name)")
 uploaded_file = st.file_uploader("Upload a photo", type=["jpg", "jpeg", "png", "webp"])
 if uploaded_file:
@@ -67,6 +67,8 @@ if "greeted" not in st.session_state:
     st.session_state.greeted = False
 if "last_question_asked" not in st.session_state:
     st.session_state.last_question_asked = None
+if "last_user_input_invalid" not in st.session_state:
+    st.session_state.last_user_input_invalid = False
 
 # --- Greeting ---
 if not st.session_state.greeted and len(st.session_state.conversation) == 0:
@@ -74,15 +76,15 @@ if not st.session_state.greeted and len(st.session_state.conversation) == 0:
     st.session_state.conversation.append(("genie", greeting))
     st.session_state.greeted = True
 
-# --- Display chat history ---
+# --- Display Conversation ---
 for role, text in st.session_state.conversation:
     icon = "🧞 VoyaGenie" if role == "genie" else "💬 You"
     st.markdown(f"<div class='chat-response'>{icon}: {text}</div>", unsafe_allow_html=True)
 
-# --- Input ---
+# --- Input Box ---
 user_input = st.text_input("Say something to your travel genie...")
 
-# --- Info Extractor ---
+# --- Extract Info ---
 def extract_info(text):
     updates = {}
     if not st.session_state.user_data["budget"]:
@@ -111,13 +113,14 @@ def extract_info(text):
             updates["destination"] = match.group(1).strip()
     return updates
 
-# --- Which field is missing? ---
+# --- Which Field is Missing ---
 def get_missing_field():
     for field in st.session_state.user_data:
         if not st.session_state.user_data[field]:
             return field
     return None
 
+# --- Follow-Up Prompts ---
 followups = {
     "budget": "What’s your budget? (Luxury, mid-range, or budget-friendly?)",
     "duration": "How long will your trip be?",
@@ -126,7 +129,7 @@ followups = {
     "destination": "Where are you thinking of going?"
 }
 
-# --- Process user input ---
+# --- Main Logic ---
 if user_input:
     st.session_state.conversation.append(("user", user_input))
 
@@ -136,20 +139,20 @@ if user_input:
     next_missing = get_missing_field()
 
     if extracted:
-        # If something was extracted, reset last asked
+        # Reset invalid flag if useful input
         st.session_state.last_question_asked = None
+        st.session_state.last_user_input_invalid = False
 
     if next_missing:
-        if st.session_state.last_question_asked != next_missing:
-            # Only ask if not already asked
+        if extracted:
             q = followups[next_missing]
             st.session_state.conversation.append(("genie", q))
             st.session_state.last_question_asked = next_missing
-        else:
-            # If user typed fluff like "hi", gently prompt
+        elif st.session_state.last_user_input_invalid is False:
             st.session_state.conversation.append(("genie", "Tell me more about your travel plans — like your budget or where you want to go!"))
+            st.session_state.last_user_input_invalid = True
     else:
-        # All info collected — generate travel plan
+        st.session_state.last_user_input_invalid = False
         prompt = "Here’s what the user told me:\n"
         for k, v in st.session_state.user_data.items():
             prompt += f"- {k.capitalize()}: {v}\n"
