@@ -3,55 +3,63 @@ import os
 import dotenv
 import google.generativeai as genai
 
-# Load .env
+# Load environment variables
 dotenv.load_dotenv()
 
-# Configure Gemini
+# Configure Gemini API
 api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-# --- CSS: Faded background, no box ---
+# ✅ CSS for Faded Background & Clean Text
 st.markdown("""
     <style>
     .stApp {
-        background-image: url("https://i.imgur.com/C6p1a31.png");
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-    }
-
-    .block-container {
-        background-color: rgba(255, 255, 255, 0.0);
-        padding: 2rem 3rem;
-        margin-top: 2rem;
-        z-index: 2;
         position: relative;
     }
 
-    /* Make text easier to read */
-    h1, h2, h3, p, label, .stTextInput label {
-        color: #222;
-        text-shadow: 0px 0px 4px rgba(255, 255, 255, 0.8);
+    .stApp::before {
+        content: "";
+        background-image: url('https://i.imgur.com/C6p1a31.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        opacity: 0.2; /* Fade strength */
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: -1;
     }
 
-    /* Chat output formatting */
-    .chat-box {
-        background: rgba(255, 255, 255, 0.6);
-        border-radius: 12px;
-        padding: 1rem;
-        margin-top: 1rem;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    .block-container {
+        padding-top: 2rem;
     }
+
+    h1, p, label, div {
+        color: #222;
+        text-shadow: 0 0 4px rgba(255,255,255,0.7);
+    }
+
+    .chat-response {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 10px;
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+
     </style>
 """, unsafe_allow_html=True)
 
-# --- Title and file upload ---
+# ✅ Title and Upload
 st.title("🧞‍♂️ VoyaGenie - Your AI Travel Companion")
 st.markdown("📸 Upload a photo of the place you want to visit (if you don’t know its name)")
-uploaded_file = st.file_uploader("Drag and drop file here", type=["jpg", "jpeg", "png", "webp"])
+uploaded_file = st.file_uploader("Upload a travel photo", type=["jpg", "jpeg", "png", "webp"])
 
-# --- Chat Logic ---
+# ✅ Gemini Chat Logic
 def chat_response(messages):
     try:
         response = model.generate_content(messages)
@@ -59,25 +67,25 @@ def chat_response(messages):
     except Exception as e:
         return f"⚠️ Error: {str(e)}"
 
-# --- Start chat history ---
+# ✅ Initialize message history
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "user", "parts": "System prompt: You are VoyaGenie, a travel planner AI. Be helpful, friendly, and specific."}
+        {"role": "user", "parts": "System prompt: You are VoyaGenie, a magical AI that helps plan fun and unique trips."}
     ]
 
-# --- User input ---
+# ✅ User input
 user_input = st.text_input("Say something to your travel genie...")
 
 if user_input:
     st.session_state.messages.append({"role": "user", "parts": user_input})
-    response = chat_response(st.session_state.messages)
-    st.session_state.messages.append({"role": "model", "parts": response})
+    reply = chat_response(st.session_state.messages)
+    st.session_state.messages.append({"role": "model", "parts": reply})
 
-# --- Show uploaded image ---
+# ✅ Show uploaded photo (optional)
 if uploaded_file:
     st.image(uploaded_file, caption="Uploaded Destination", use_column_width=True)
 
-# --- Show last response directly under input ---
+# ✅ Show last response directly under input
 if len(st.session_state.messages) > 1:
-    last_response = st.session_state.messages[-1]["parts"]
-    st.markdown(f'<div class="chat-box">🧞 VoyaGenie: {last_response}</div>', unsafe_allow_html=True)
+    last = st.session_state.messages[-1]["parts"]
+    st.markdown(f'<div class="chat-response">🧞 VoyaGenie: {last}</div>', unsafe_allow_html=True)
