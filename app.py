@@ -20,7 +20,7 @@ st.set_page_config(page_title="VoyaGenie - Smart Travel Chatbot", page_icon="ðŸ§
 st.markdown("""
     <style>
     .stApp {
-        background-image: url("background.png");
+        background-image: url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=80");
         background-size: cover;
         background-attachment: fixed;
         background-repeat: no-repeat;
