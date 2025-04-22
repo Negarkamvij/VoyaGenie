@@ -16,11 +16,11 @@ model = genai.GenerativeModel("gemini-1.5-pro")
 # Page settings
 st.set_page_config(page_title="VoyaGenie - Smart Travel Chatbot", page_icon="🧞‍♀️")
 
-# Faded background with overlay (PNG version)
+# Use a cloud-safe background image
 st.markdown("""
     <style>
     .stApp {
-        background-image: url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=80");
+        background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=80');
         background-size: cover;
         background-attachment: fixed;
         background-repeat: no-repeat;
