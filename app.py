@@ -3,7 +3,6 @@ import os
 import dotenv
 import google.generativeai as genai
 
-# Load API key
 dotenv.load_dotenv()
 api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
@@ -69,3 +68,5 @@ if submit_button and user_input:
         reply = f"Sorry, something went wrong: {e}"
 
     st.session_state.chat_history.append({"role": "genie", "text": reply})
+
+    st.rerun()  
