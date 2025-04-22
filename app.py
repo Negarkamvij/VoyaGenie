@@ -8,7 +8,6 @@ dotenv.load_dotenv()
 api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
-chat = model.start_chat(history=[])
 
 # --- UI Styling ---
 st.markdown("""
@@ -39,34 +38,35 @@ st.markdown("""
 
 # --- Title ---
 st.markdown("""
-<h1 style='text-align: center; font-weight: bold;'>🧞‍♂️ VoyaGenie</h1>
-<h3 style='text-align: center;'>Your AI Travel Chatbot</h3>
+<h1 style='text-align: center;'>🧞‍♂️ VoyaGenie</h1>
+<h3 style='text-align: center;'>Ask Me Anything About Travel</h3>
 """, unsafe_allow_html=True)
 
-# --- Chat state ---
+# --- Chatbot State ---
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [
-        {"role": "genie", "text": "Hello! I’m VoyaGenie. Ask me anything about travel — destinations, visas, when to go, budgets, or what to pack!"}
+        {"role": "genie", "text": "Hello! I’m VoyaGenie 🧞. Ask me anything about travel — destinations, visas, budgets, seasons, or what to pack!"}
     ]
-if "chat" not in st.session_state:
-    st.session_state.chat = model.start_chat(history=[])
+if "chat_model" not in st.session_state:
+    st.session_state.chat_model = model.start_chat(history=[])
 
-# --- Display chat history ---
-for msg in st.session_state.chat_history:
-    name = "🧞 VoyaGenie" if msg["role"] == "genie" else "💬 You"
-    st.markdown(f"<div class='chat-response'>{name}: {msg['text']}</div>", unsafe_allow_html=True)
+# --- Display Chat History ---
+for message in st.session_state.chat_history:
+    who = "🧞 VoyaGenie" if message["role"] == "genie" else "💬 You"
+    st.markdown(f"<div class='chat-response'>{who}: {message['text']}</div>", unsafe_allow_html=True)
 
 # --- Input ---
-user_input = st.text_input("Ask your travel question here...")
+user_question = st.text_input("Ask your travel question...")
 
-if user_input:
-    st.session_state.chat_history.append({"role": "user", "text": user_input})
+# --- When user submits a question ---
+if user_question:
+    st.session_state.chat_history.append({"role": "user", "text": user_question})
 
     try:
-        response = st.session_state.chat.send_message(user_input)
-        reply = response.text.strip()
+        response = st.session_state.chat_model.send_message(user_question)
+        ai_reply = response.text.strip()
     except Exception as e:
-        reply = f"Oops, I had trouble replying: {e}"
+        ai_reply = f"Sorry, something went wrong: {e}"
 
-    st.session_state.chat_history.append({"role": "genie", "text": reply})
-    st.experimental_rerun()
+    st.session_state.chat_history.append({"role": "genie", "text": ai_reply})
+    st.session_state.user_message = ""  # Optional: clear for next render
