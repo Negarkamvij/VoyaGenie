@@ -3,7 +3,7 @@ import os
 import dotenv
 import google.generativeai as genai
 
-# Load environment variables
+# Load .env variables
 dotenv.load_dotenv()
 
 # Configure Gemini API
@@ -11,55 +11,44 @@ api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-# ✅ CSS for Faded Background & Clean Text
+# --- BACKGROUND CSS ---
 st.markdown("""
     <style>
     .stApp {
-        position: relative;
-    }
-
-    .stApp::before {
-        content: "";
-        background-image: url('https://i.imgur.com/C6p1a31.png');
+        background-image: linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.6)),
+                          url('https://i.imgur.com/C6p1a31.png');
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
-        opacity: 0.2; /* Fade strength */
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        z-index: -1;
+        background-attachment: fixed;
     }
 
     .block-container {
-        padding-top: 2rem;
+        padding: 2rem 3rem;
     }
 
-    h1, p, label, div {
+    h1, label, p {
         color: #222;
-        text-shadow: 0 0 4px rgba(255,255,255,0.7);
+        text-shadow: 0 0 3px rgba(255,255,255,0.6);
     }
 
     .chat-response {
-        margin-top: 1rem;
+        background-color: rgba(255, 255, 255, 0.6);
         padding: 1rem;
-        background: rgba(255, 255, 255, 0.7);
-        border-radius: 10px;
+        border-radius: 12px;
+        margin-top: 1rem;
         font-size: 1rem;
         line-height: 1.5;
     }
-
     </style>
 """, unsafe_allow_html=True)
 
-# ✅ Title and Upload
+# --- TITLE + FILE UPLOAD ---
 st.title("🧞‍♂️ VoyaGenie - Your AI Travel Companion")
 st.markdown("📸 Upload a photo of the place you want to visit (if you don’t know its name)")
-uploaded_file = st.file_uploader("Upload a travel photo", type=["jpg", "jpeg", "png", "webp"])
+uploaded_file = st.file_uploader("Upload a photo", type=["jpg", "jpeg", "png", "webp"])
 
-# ✅ Gemini Chat Logic
+# --- CHAT FUNCTION ---
 def chat_response(messages):
     try:
         response = model.generate_content(messages)
@@ -67,13 +56,13 @@ def chat_response(messages):
     except Exception as e:
         return f"⚠️ Error: {str(e)}"
 
-# ✅ Initialize message history
+# --- SETUP SESSION STATE ---
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "user", "parts": "System prompt: You are VoyaGenie, a magical AI that helps plan fun and unique trips."}
+        {"role": "user", "parts": "System prompt: You are VoyaGenie, a helpful and fun AI travel assistant."}
     ]
 
-# ✅ User input
+# --- USER INPUT ---
 user_input = st.text_input("Say something to your travel genie...")
 
 if user_input:
@@ -81,11 +70,11 @@ if user_input:
     reply = chat_response(st.session_state.messages)
     st.session_state.messages.append({"role": "model", "parts": reply})
 
-# ✅ Show uploaded photo (optional)
+# --- SHOW UPLOADED IMAGE ---
 if uploaded_file:
     st.image(uploaded_file, caption="Uploaded Destination", use_column_width=True)
 
-# ✅ Show last response directly under input
+# --- SHOW REPLY INLINE ---
 if len(st.session_state.messages) > 1:
-    last = st.session_state.messages[-1]["parts"]
-    st.markdown(f'<div class="chat-response">🧞 VoyaGenie: {last}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="chat-response">🧞 VoyaGenie: {st.session_state.messages[-1]["parts"]}</div>', unsafe_allow_html=True)
+
