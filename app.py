@@ -11,9 +11,15 @@ api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-# --- CSS Styling ---
+# --- CSS Styling with Comic Font and Faded Background ---
 st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Comic Neue', 'Comic Sans MS', cursive, sans-serif;
+    }
+
     .stApp {
         background-image: linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.6)),
                           url('https://i.imgur.com/C6p1a31.png');
@@ -43,7 +49,12 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Init session state ---
+# --- Title and Upload ---
+st.title("🧞‍♂️ VoyaGenie - Your AI Travel Companion")
+st.markdown("📸 Upload a photo of the place you want to visit (if you don’t know its name)")
+uploaded_file = st.file_uploader("Upload a photo", type=["jpg", "jpeg", "png", "webp"])
+
+# --- Session State ---
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "user", "parts": "System prompt: You are VoyaGenie, a helpful and fun AI travel assistant."}
@@ -51,23 +62,19 @@ if "messages" not in st.session_state:
 if "just_sent" not in st.session_state:
     st.session_state.just_sent = False
 
-# --- Title & Image Upload ---
-st.title("🧞‍♂️ VoyaGenie - Your AI Travel Companion")
-st.markdown("📸 Upload a photo of the place you want to visit (if you don’t know its name)")
-uploaded_file = st.file_uploader("Upload a photo", type=["jpg", "jpeg", "png", "webp"])
-
+# --- Display Uploaded Image ---
 if uploaded_file:
     st.image(uploaded_file, caption="Uploaded Destination", use_column_width=True)
 
-# --- Show previous model replies ---
+# --- Display Past Messages ---
 for msg in st.session_state.messages[1:]:
     if msg["role"] == "model":
         st.markdown(f'<div class="chat-response">🧞 VoyaGenie: {msg["parts"]}</div>', unsafe_allow_html=True)
 
-# --- Text input ---
+# --- User Input at Bottom ---
 user_input = st.text_input("Say something to your travel genie...")
 
-# --- Handle response ---
+# --- Gemini Chat Logic ---
 def chat_response(messages):
     try:
         response = model.generate_content(messages)
@@ -75,6 +82,7 @@ def chat_response(messages):
     except Exception as e:
         return f"⚠️ Error: {str(e)}"
 
+# --- Handle Input and Rerun Safely ---
 if user_input and not st.session_state.just_sent:
     st.session_state.messages.append({"role": "user", "parts": user_input})
     reply = chat_response(st.session_state.messages)
@@ -82,6 +90,6 @@ if user_input and not st.session_state.just_sent:
     st.session_state.just_sent = True
     st.rerun()
 
-# --- Reset flag after rerun ---
+# --- Reset just_sent flag after rerun ---
 if st.session_state.just_sent:
     st.session_state.just_sent = False
