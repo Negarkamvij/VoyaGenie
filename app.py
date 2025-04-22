@@ -52,7 +52,7 @@ uploaded_file = st.file_uploader("Upload a photo", type=["jpg", "jpeg", "png", "
 if uploaded_file:
     st.image(uploaded_file, caption="Uploaded Destination", use_column_width=True)
 
-# --- Session State ---
+# --- Session State Setup ---
 if "conversation" not in st.session_state:
     st.session_state.conversation = []
 if "user_data" not in st.session_state:
@@ -68,93 +68,12 @@ if "greeted" not in st.session_state:
 if "last_question_asked" not in st.session_state:
     st.session_state.last_question_asked = None
 
-# --- Greet only once ---
+# --- Greeting ---
 if not st.session_state.greeted and len(st.session_state.conversation) == 0:
     greeting = "Hello there! I’m VoyaGenie 🧞‍♂️ and I’d love to help you plan your perfect trip. Just tell me what you’re dreaming of — a destination, budget, travel length, anything!"
     st.session_state.conversation.append(("genie", greeting))
     st.session_state.greeted = True
 
-# --- Show chat history ---
+# --- Display chat history ---
 for role, text in st.session_state.conversation:
-    icon = "🧞 VoyaGenie" if role == "genie" else "💬 You"
-    st.markdown(f"<div class='chat-response'>{icon}: {text}</div>", unsafe_allow_html=True)
-
-# --- User input ---
-user_input = st.text_input("Say something to your travel genie...")
-
-# --- Extraction logic ---
-def extract_info(text):
-    updates = {}
-    if not st.session_state.user_data["budget"]:
-        match = re.search(r"\$\s?(\d+)", text)
-        if match:
-            updates["budget"] = f"${match.group(1)}"
-        elif "budget" in text.lower():
-            updates["budget"] = "budget-friendly"
-        elif "luxury" in text.lower():
-            updates["budget"] = "luxury"
-    if not st.session_state.user_data["duration"]:
-        match = re.search(r"(\d+)\s?(days?|weeks?)", text.lower())
-        if match:
-            updates["duration"] = match.group(0)
-    if not st.session_state.user_data["companions"]:
-        for word in ["solo", "partner", "family", "friends"]:
-            if word in text.lower():
-                updates["companions"] = word
-    if not st.session_state.user_data["interests"]:
-        interests = re.findall(r"(beaches|food|culture|nightlife|shopping|museums|nature)", text.lower())
-        if interests:
-            updates["interests"] = ", ".join(set(interests))
-    if not st.session_state.user_data["destination"]:
-        match = re.search(r"in ([A-Za-z\s]+)", text)
-        if match:
-            updates["destination"] = match.group(1).strip()
-    return updates
-
-# --- Get next missing field ---
-def get_missing_field():
-    for field in st.session_state.user_data:
-        if not st.session_state.user_data[field]:
-            return field
-    return None
-
-# --- Follow-up questions ---
-followups = {
-    "budget": "What’s your budget? (Luxury, mid-range, or budget-friendly?)",
-    "duration": "How long will your trip be?",
-    "companions": "Who are you traveling with? (Solo, partner, family, friends?)",
-    "interests": "What are your interests? (Food, beaches, nightlife, museums, etc.)",
-    "destination": "Where are you thinking of going?"
-}
-
-# --- Handle Input ---
-if user_input:
-    st.session_state.conversation.append(("user", user_input))
-    extracted = extract_info(user_input)
-    st.session_state.user_data.update({k: v for k, v in extracted.items() if v})
-
-    next_missing = get_missing_field()
-    if extracted:
-        st.session_state.last_question_asked = None  # Reset so new Q can be asked
-
-    if next_missing and extracted:
-        q = followups[next_missing]
-        st.session_state.conversation.append(("genie", q))
-        st.session_state.last_question_asked = next_missing
-    elif next_missing and st.session_state.last_question_asked != next_missing:
-        q = followups[next_missing]
-        st.session_state.conversation.append(("genie", q))
-        st.session_state.last_question_asked = next_missing
-    elif not next_missing:
-        prompt = "Here’s what the user told me:\n"
-        for k, v in st.session_state.user_data.items():
-            prompt += f"- {k.capitalize()}: {v}\n"
-        prompt += "\nPlease give a helpful, friendly travel recommendation based on this."
-
-        with st.spinner("VoyaGenie is planning your perfect trip..."):
-            response = model.generate_content(prompt).text
-
-        st.session_state.conversation.append(("genie", response))
-        st.session_state.last_question_asked = None
-
-    st.rerun()
+    icon = "🧞 VoyaGenie" if
