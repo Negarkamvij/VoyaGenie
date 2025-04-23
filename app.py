@@ -47,6 +47,13 @@ st.markdown("""
   border-radius: 12px !important;
   margin-top: 1rem;
 }
+.block-container {
+  background-color: rgba(255,255,255,0.4) !important;
+  border-radius: 16px;
+  padding: 1rem;
+  margin-bottom: 0 !important;
+  box-shadow: none;
+}
 </style>
 <h1 style='text-align:center;'>🧞‍♂️ VoyaGenie</h1>
 <h3 style='text-align:center;'>Your Personal Travel Chatbot</h3>
