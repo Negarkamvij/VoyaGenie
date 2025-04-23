@@ -14,7 +14,7 @@ model = genai.GenerativeModel("gemini-1.5-flash")
 def fetch_conversation():
     if "messages" not in st.session_state:
         st.session_state["messages"] = [
-            {"role": "user", "parts": "System prompt: You are VoyaGenie 🧞‍♂️, a Google-powered travel planner. When the user provides details, you help generate smart links to Google Flights, Google Hotels, and Google Maps. Use their departure, destination, dates, number of people, and budget to assist them without requiring payment."}
+            {"role": "user", "parts": "System prompt: You are VoyaGenie 🧞‍♂️, a helpful travel assistant that gives real-time travel advice by generating Google Flights and Hotels links. You do not pretend to search. If asked for flights or hotels, generate clickable search links and do not simulate browsing time. Always be fast, helpful, and skip delays."}
         ]
     return st.session_state["messages"]
 
@@ -22,7 +22,17 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap');
 * { font-family: 'Comic Neue', 'Comic Sans MS', cursive, sans-serif !important; font-weight: bold !important; }
-.stApp { background-image: linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.6)), url('https://i.imgur.com/C6p1a31.png'); background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed; }
+.stApp {
+    background-image: linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.6)), url('https://i.imgur.com/C6p1a31.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+    padding-bottom: 0px !important;
+    margin-bottom: 0px !important;
+    overflow-x: hidden;
+}
 .chat-response { background-color: rgba(255,255,255,0.6); padding:1rem; border-radius:12px; margin:0.5rem 0; font-size:1rem; line-height:1.5; }
 </style>
 <h1 style='text-align:center;'>🧞‍♂️ VoyaGenie</h1>
