@@ -58,9 +58,7 @@ with col1:
 with col2:
     send_clicked = st.button("Send")
 
-if user_input.strip() and (send_clicked or user_input):
-
-if submitted and user_input.strip():
+if user_input.strip() and (send_clicked or st.session_state.get("user_input_form")):
     user_message = user_input.strip()
     st.session_state.chat_history.append({"role": "user", "text": user_message})
     try:
@@ -69,3 +67,12 @@ if submitted and user_input.strip():
         st.session_state.chat_history.append({"role": "genie", "text": reply})
     except Exception as e:
         st.session_state.chat_history.append({"role": "genie", "text": f"Oops, something went wrong: {e}"})
+    user_message = user_input.strip()
+    st.session_state.chat_history.append({"role": "user", "text": user_message})
+    try:
+        response = st.session_state.chat.send_message(user_message)
+        reply = response.text.strip()
+        st.session_state.chat_history.append({"role": "genie", "text": reply})
+    except Exception as e:
+        st.session_state.chat_history.append({"role": "genie", "text": f"Oops, something went wrong: {e}"})
+
