@@ -8,7 +8,8 @@ import requests
 # Load environment variables
 dotenv.load_dotenv()
 api_key = os.getenv("API_KEY")
-weather_key = "50641414b45f330d06ba7e0626def10a"  # OpenWeather API Key
+openweather_key = "50641414b45f330d06ba7e0626def10a"
+
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
@@ -56,6 +57,20 @@ st.markdown("""
 
 user_input = st.chat_input("Tell me where you're traveling to and from, plus your dates!")
 
+def get_weather(city):
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={quote_plus(city)}&appid={openweather_key}&units=metric"
+    try:
+        res = requests.get(url)
+        data = res.json()
+        if res.status_code == 200:
+            weather = data['weather'][0]['description'].capitalize()
+            temp = data['main']['temp']
+            return f"The current weather in {city.title()} is {weather} with a temperature of {temp}°C."
+        else:
+            return f"Sorry, I couldn't retrieve weather data for {city.title()}."
+    except Exception as e:
+        return f"Error fetching weather: {e}"
+
 if user_input:
     messages = fetch_conversation()
     messages.append({"role": "user", "parts": user_input})
@@ -64,6 +79,14 @@ if user_input:
         reply_text = response.candidates[0].content.parts[0].text
     except Exception as e:
         reply_text = f"Oops! Something went wrong: {e}"
+
+    # Weather check
+    if "weather" in user_input.lower():
+        for word in user_input.lower().split():
+            if word not in ["weather", "is", "like", "in", "the", "how", "what", "current"]:
+                weather_info = get_weather(word)
+                reply_text = weather_info
+                break
 
     # Try parsing for city and date info
     if any(loc in user_input.lower() for loc in ["to", "from"]):
@@ -74,28 +97,16 @@ if user_input:
             origin = words[from_index]
             destination = words[to_index]
 
-            # Compose Google Flights and Hotels URLs
             flight_url = f"https://www.google.com/travel/flights?q=Flights%20from%20{quote_plus(origin)}%20to%20{quote_plus(destination)}"
             hotel_url = f"https://www.google.com/travel/hotels/{quote_plus(destination)}"
 
-            # Get weather
-            weather_url = f"https://api.openweathermap.org/data/2.5/weather?q={quote_plus(destination)}&appid={weather_key}&units=metric"
-            weather_response = requests.get(weather_url).json()
-            weather_info = ""
-            if "main" in weather_response:
-                temp = weather_response['main']['temp']
-                desc = weather_response['weather'][0]['description']
-                weather_info = f"\n🌤️ Current weather in {destination.title()}: {temp}°C, {desc}."
-
             reply_text += f"\n\n✈️ [Search flights from {origin.title()} to {destination.title()}]({flight_url})"
             reply_text += f"\n🏨 [Find hotels in {destination.title()}]({hotel_url})"
-            reply_text += weather_info
         except:
             pass
 
     messages.append({"role": "model", "parts": reply_text})
 
-# --- Display Chat ---
 if "messages" in st.session_state:
     for msg in st.session_state["messages"]:
         if msg["role"] == "model":
