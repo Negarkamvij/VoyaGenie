@@ -47,6 +47,13 @@ st.markdown("""
   border-radius: 12px !important;
   margin-top: 1rem;
 }
+.block-container {
+  background-color: rgba(255,255,255,0.4) !important;
+  border-radius: 16px;
+  padding: 1rem;
+  margin-bottom: 0 !important;
+  box-shadow: none;
+}
 </style>
 <h1 style='text-align:center;'>🧞‍♂️ VoyaGenie</h1>
 <h3 style='text-align:center;'>Your Personal Travel Chatbot</h3>
@@ -74,10 +81,10 @@ if user_input:
             destination = words[to_index]
 
             # Compose Google Flights and Hotels URLs
-            flight_url = f"https://www.google.com/travel/flights?q=Flights%20from%20{quote_plus(origin)}%20to%20{quote_plus(destination)}"
-            hotel_url = f"https://www.google.com/travel/hotels/{quote_plus(destination)}"
+flight_url = f"https://www.google.com/travel/flights?q=Flights%20from%20{quote_plus(origin)}%20to%20{quote_plus(destination)}%20in%20June%202024&curr=USD&hl=en&gl=US&source=flights&flt={quote_plus(origin)}.{quote_plus(destination)}.2024-06-01*{quote_plus(destination)}.{quote_plus(origin)}.2024-06-30;c:USD;e:1;sd:1;t:f"
+hotel_url = f"https://www.google.com/travel/hotels/{quote_plus(destination)}"
 
-            reply_text += f"\n\n✈️ [Search flights from {origin.title()} to {destination.title()}]({flight_url})"
+reply_text += f"\n\n✈️ [Search cheapest flights from {origin.title()} to {destination.title()} in June for 2 adults]({flight_url})"
             reply_text += f"\n🏨 [Find hotels in {destination.title()}]({hotel_url})"
         except:
             pass
