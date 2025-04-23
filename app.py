@@ -45,30 +45,36 @@ def recognize_location_from_image(image_bytes):
         "requests": [
             {
                 "image": {"content": encoded},
-                "features": [{"type": "WEB_DETECTION"}]
+                "features": [
+                    {"type": "WEB_DETECTION"},
+                    {"type": "LABEL_DETECTION", "maxResults": 3}
+                ]
             }
         ]
     }
     response = requests.post(url, json=body)
     try:
-        annotations = response.json()['responses'][0]['webDetection']
-        if 'bestGuessLabels' in annotations:
-            return annotations['bestGuessLabels'][0]['label']
+        data = response.json()['responses'][0]
+        labels = []
+        if 'webDetection' in data and 'bestGuessLabels' in data['webDetection']:
+            labels.append(data['webDetection']['bestGuessLabels'][0]['label'])
+        if 'labelAnnotations' in data:
+            labels.extend([ann['description'] for ann in data['labelAnnotations']])
+        return ', '.join(set(labels)) if labels else None
     except Exception:
         return None
-    return None
 
 # --- Image upload + recognition ---
 uploaded_file = st.sidebar.file_uploader("📸 Upload a destination photo", type=["jpg", "jpeg", "png"])
 if uploaded_file:
     image_bytes = uploaded_file.read()
     st.sidebar.image(image_bytes, caption="Uploaded Image", use_column_width=True)
-    st.session_state.chat_history.append({"role": "user", "text": "[uploaded an image]"})
     guess = recognize_location_from_image(image_bytes)
+    st.session_state.chat_history.append({"role": "user", "text": "[uploaded an image]"})
     if guess:
-        reply = f"That looks like **{guess}**. Want to plan a trip there?"
+        reply = f"That looks like: **{guess}**. Want help planning a trip there?"
     else:
-        reply = "Sorry, I couldn't recognize that place. Could you tell me where it is?"
+        reply = "Sorry, I couldn't confidently identify the place. Could you type the destination?"
     st.session_state.chat_history.append({"role": "genie", "text": reply})
 
 # --- Display chat ---
@@ -78,13 +84,14 @@ for msg in st.session_state.chat_history:
 
 # --- Free Chat Mode ---
 user_input = st.text_input("Ask your travel question:", key="user_input")
-if user_input:
-    st.session_state.chat_history.append({"role": "user", "text": user_input})
+if user_input.strip():
+    st.session_state.chat_history.append({"role": "user", "text": user_input.strip()})
     try:
-        response = st.session_state.chat.send_message(user_input)
+        response = st.session_state.chat.send_message(user_input.strip())
         reply = response.text.strip()
     except Exception as e:
         reply = f"Oops, something went wrong: {e}"
     st.session_state.chat_history.append({"role": "genie", "text": reply})
+    st.experimental_set_query_params(clear="true")
     st.session_state.user_input = ""
-    st.rerun()
+    st.experimental_rerun()
