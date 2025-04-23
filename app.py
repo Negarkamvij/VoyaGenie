@@ -8,7 +8,7 @@ from urllib.parse import quote_plus
 dotenv.load_dotenv()
 api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
-model = genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-2.0-flash")
 
 # --- Session State Setup ---
 def fetch_conversation():
