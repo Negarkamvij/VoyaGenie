@@ -82,9 +82,12 @@ for msg in st.session_state.chat_history:
     speaker = "🧞‍♂️ VoyaGenie" if msg['role'] == 'genie' else "💬 You"
     st.markdown(f"<div class='chat-response'><b>{speaker}:</b> {msg['text']}</div>", unsafe_allow_html=True)
 
-# --- Free Chat Mode ---
-user_input = st.text_input("Ask your travel question:", key="user_input")
-if user_input.strip():
+# --- Input box with Send button ---
+with st.form(key="chat_form", clear_on_submit=True):
+    user_input = st.text_input("Ask your travel question:", key="user_input_form")
+    submitted = st.form_submit_button("Send")
+
+if submitted and user_input.strip():
     st.session_state.chat_history.append({"role": "user", "text": user_input.strip()})
     try:
         response = st.session_state.chat.send_message(user_input.strip())
@@ -92,6 +95,3 @@ if user_input.strip():
     except Exception as e:
         reply = f"Oops, something went wrong: {e}"
     st.session_state.chat_history.append({"role": "genie", "text": reply})
-    st.experimental_set_query_params(clear="true")
-    st.session_state.user_input = ""
-    st.experimental_rerun()
