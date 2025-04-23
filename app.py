@@ -8,24 +8,13 @@ from urllib.parse import quote_plus
 dotenv.load_dotenv()
 api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
-model = genai.GenerativeModel("gemini-2.0-flash")
-
-SYSTEM_PROMPT = """
-You are VoyaGenie 🧞‍♂️, an expert Google-powered AI travel assistant.
-When asked about travel, always:
-- Ask smart follow-up questions
-- Search for cheap flights, hotels, and restaurants using Google tools
-- Generate clickable Google links
-- Never simulate browsing time
-- Always sound friendly, practical, and professional
-- Use markdown formatting for clarity and bold important points
-"""
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 # --- Session State Setup ---
 def fetch_conversation():
     if "messages" not in st.session_state:
         st.session_state["messages"] = [
-            {"role": "user", "parts": SYSTEM_PROMPT.strip()}
+            {"role": "user", "parts": "System prompt: You are VoyaGenie 🧞‍♂️, a smart, Google-powered travel assistant. When the user mentions travel, ask smart follow-up questions to refine results — for example, ask for preferred flight types (direct/cheap), hotel filters (budget, stars), or restaurant preferences (cuisine, price, rating). Then generate Google links or summaries for the most relevant options. Do not simulate browsing or delays — always respond quickly and use helpful links.. You do not pretend to search. If asked for flights or hotels, generate clickable search links and do not simulate browsing time. Always be fast, helpful, and skip delays."}
         ]
     return st.session_state["messages"]
 
@@ -69,16 +58,14 @@ if user_input:
     messages = fetch_conversation()
     messages.append({"role": "user", "parts": user_input})
     try:
-        response = model.generate_content(
-            messages,
-            generation_config={"temperature": 0.7, "candidate_count": 1}
-        )
+        response = model.generate_content(messages)
         reply_text = response.candidates[0].content.parts[0].text
     except Exception as e:
         reply_text = f"Oops! Something went wrong: {e}"
 
     # Try parsing for city and date info
     if any(loc in user_input.lower() for loc in ["to", "from"]):
+        # Basic parsing (manual, should be upgraded with NLP later)
         words = user_input.lower().split()
         try:
             from_index = words.index("from") + 1
@@ -86,6 +73,7 @@ if user_input:
             origin = words[from_index]
             destination = words[to_index]
 
+            # Compose Google Flights and Hotels URLs
             flight_url = f"https://www.google.com/travel/flights?q=Flights%20from%20{quote_plus(origin)}%20to%20{quote_plus(destination)}"
             hotel_url = f"https://www.google.com/travel/hotels/{quote_plus(destination)}"
 
@@ -96,6 +84,7 @@ if user_input:
 
     messages.append({"role": "model", "parts": reply_text})
 
+# --- Display Chat ---
 if "messages" in st.session_state:
     for msg in st.session_state["messages"]:
         if msg["role"] == "model":
