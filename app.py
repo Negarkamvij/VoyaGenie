@@ -46,7 +46,8 @@ with col2:
     send_clicked = st.button("Send")
 
 # --- Handle chat input ---
-if (send_clicked or user_input) and user_input.strip():
+if (send_clicked or st.session_state.get("user_input_form_sent")) and user_input.strip():
+    st.session_state["user_input_form_sent"] = False  # Reset
     user_message = user_input.strip()
     st.session_state.chat_history.append({"role": "user", "text": user_message})
     try:
@@ -55,4 +56,7 @@ if (send_clicked or user_input) and user_input.strip():
         st.session_state.chat_history.append({"role": "genie", "text": reply})
     except Exception as e:
         st.session_state.chat_history.append({"role": "genie", "text": f"Oops, something went wrong: {e}"})
-    st.rerun()
+
+# Detect Enter key only (no rerun loop)
+if user_input and not send_clicked:
+    st.session_state["user_input_form_sent"] = True
