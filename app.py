@@ -1,62 +1,40 @@
 import streamlit as st
 import os
-import io
 import dotenv
 import google.generativeai as genai
 
-# Load API keys
+# Load environment variables
 dotenv.load_dotenv()
-GEMINI_API_KEY = os.getenv("API_KEY")
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-1.5-flash")  # Using chat-friendly and stable model
+api_key = os.getenv("API_KEY")
+genai.configure(api_key=api_key)
+model = genai.GenerativeModel("gemini-1.5-flash")
 
-# --- Session State Setup ---
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = [
-        {"role": "genie", "text": "Hello! I’m VoyaGenie 🧞‍♂️. Ask me anything about travel — where to go, when, how much it costs, or how to get there!"}
-    ]
-if "chat" not in st.session_state:
-    st.session_state.chat = model.start_chat(history=[])
+# --- Conversation Setup ---
+def fetch_conversation():
+    if "messages" not in st.session_state:
+        st.session_state["messages"] = [
+            {"role": "user", "parts": "System prompt: You are VoyaGenie, a helpful AI travel assistant."}
+        ]
+    return st.session_state["messages"]
 
-# --- UI Styling ---
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap');
-* { font-family: 'Comic Neue', 'Comic Sans MS', cursive, sans-serif !important; font-weight: bold !important; }
-.stApp { background-image: linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.6)), url('https://i.imgur.com/C6p1a31.png'); background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed; }
-.chat-response { background-color: rgba(255,255,255,0.6); padding:1rem; border-radius:12px; margin:0.5rem 0; font-size:1rem; line-height:1.5; }
-</style>
-""", unsafe_allow_html=True)
+st.title("🧞‍♂️ VoyaGenie — Your Personal Travel Chatbot")
 
-st.markdown("""
-<h1 style='text-align:center;'>🧞‍♂️ VoyaGenie</h1>
-<h3 style='text-align:center;'>Ask Me Anything About Travel</h3>
-""", unsafe_allow_html=True)
+user_input = st.chat_input("Ask your travel question...")
 
-# --- Display chat ---
-for msg in st.session_state.chat_history:
-    speaker = "🧞‍♂️ VoyaGenie" if msg['role'] == 'genie' else "💬 You"
-    st.markdown(f"<div class='chat-response'><b>{speaker}:</b> {msg['text']}</div>", unsafe_allow_html=True)
-
-# --- Input box with Send button ---
-col1, col2 = st.columns([0.85, 0.15])
-with col1:
-    user_input = st.text_input("Ask your travel question:", key="user_input_form", placeholder="Type and press Enter or click Send")
-with col2:
-    send_clicked = st.button("Send")
-
-# --- Handle chat input ---
-if (send_clicked or st.session_state.get("user_input_form_sent")) and user_input.strip():
-    st.session_state["user_input_form_sent"] = False  # Reset
-    user_message = user_input.strip()
-    st.session_state.chat_history.append({"role": "user", "text": user_message})
+if user_input:
+    messages = fetch_conversation()
+    messages.append({"role": "user", "parts": user_input})
     try:
-        response = st.session_state.chat.send_message(user_message)
-        reply = response.text.strip()
-        st.session_state.chat_history.append({"role": "genie", "text": reply})
+        response = model.generate_content(messages)
+        reply_text = response.candidates[0].content.parts[0].text
     except Exception as e:
-        st.session_state.chat_history.append({"role": "genie", "text": f"Oops, something went wrong: {e}"})
+        reply_text = f"Oops! Something went wrong: {e}"
+    messages.append({"role": "model", "parts": reply_text})
 
-# Detect Enter key only (no rerun loop)
-if user_input and not send_clicked:
-    st.session_state["user_input_form_sent"] = True
+# --- Display Chat ---
+if "messages" in st.session_state:
+    for msg in st.session_state["messages"]:
+        if msg["role"] == "model":
+            st.chat_message("assistant").write(msg["parts"])
+        elif msg["role"] == "user" and "System prompt" not in msg["parts"]:
+            st.chat_message("user").write(msg["parts"])
