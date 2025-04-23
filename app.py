@@ -34,6 +34,19 @@ st.markdown("""
     overflow-x: hidden;
 }
 .chat-response { background-color: rgba(255,255,255,0.6); padding:1rem; border-radius:12px; margin:0.5rem 0; font-size:1rem; line-height:1.5; }
+.stTextInput > div > div > input {
+  background-color: rgba(255,255,255,0.4) !important;
+  border-radius: 12px !important;
+  color: #000 !important;
+  font-weight: bold;
+  padding: 0.75rem;
+}
+
+.stTextInput > div {
+  background-color: rgba(255,255,255,0.3) !important;
+  border-radius: 12px !important;
+  margin-top: 1rem;
+}
 </style>
 <h1 style='text-align:center;'>🧞‍♂️ VoyaGenie</h1>
 <h3 style='text-align:center;'>Your Personal Travel Chatbot</h3>
