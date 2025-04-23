@@ -4,12 +4,11 @@ import dotenv
 import google.generativeai as genai
 from urllib.parse import quote_plus
 import requests
+import re
 
 # Load environment variables
 dotenv.load_dotenv()
 api_key = os.getenv("API_KEY")
-openweather_key = "50641414b45f330d06ba7e0626def10a"
-
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
@@ -57,56 +56,57 @@ st.markdown("""
 
 user_input = st.chat_input("Tell me where you're traveling to and from, plus your dates!")
 
+# --- Weather using OpenWeather API ---
 def get_weather(city):
-    url = f"https://api.openweathermap.org/data/2.5/weather?q={quote_plus(city)}&appid={openweather_key}&units=metric"
     try:
+        api_key = "50641414b45f330d06ba7e0626def10a"
+        url = f"https://api.openweathermap.org/data/2.5/weather?q={quote_plus(city)}&appid={api_key}&units=metric"
         res = requests.get(url)
         data = res.json()
-        if res.status_code == 200:
-            weather = data['weather'][0]['description'].capitalize()
-            temp = data['main']['temp']
-            return f"The current weather in {city.title()} is {weather} with a temperature of {temp}°C."
+        if data["cod"] == 200:
+            temp = data["main"]["temp"]
+            desc = data["weather"][0]["description"]
+            return f"The current weather in {city.title()} is {temp}°C with {desc}."
         else:
             return f"Sorry, I couldn't retrieve weather data for {city.title()}."
-    except Exception as e:
-        return f"Error fetching weather: {e}"
+    except:
+        return "Something went wrong retrieving the weather."
 
 if user_input:
     messages = fetch_conversation()
     messages.append({"role": "user", "parts": user_input})
     try:
-        response = model.generate_content(messages)
-        reply_text = response.candidates[0].content.parts[0].text
+        # Weather check first
+        weather_match = re.search(r"weather\\s+(in\\s+)?([a-zA-Z\\s]+)", user_input.lower())
+        if weather_match:
+            city_query = weather_match.group(2).strip()
+            reply_text = get_weather(city_query)
+        else:
+            response = model.generate_content(messages)
+            reply_text = response.candidates[0].content.parts[0].text
+
+            if any(loc in user_input.lower() for loc in ["to", "from"]):
+                words = user_input.lower().split()
+                try:
+                    from_index = words.index("from") + 1
+                    to_index = words.index("to") + 1
+                    origin = words[from_index]
+                    destination = words[to_index]
+
+                    flight_url = f"https://www.google.com/travel/flights?q=Flights%20from%20{quote_plus(origin)}%20to%20{quote_plus(destination)}"
+                    hotel_url = f"https://www.google.com/travel/hotels/{quote_plus(destination)}"
+
+                    reply_text += f"\n\n✈️ [Search flights from {origin.title()} to {destination.title()}]({flight_url})"
+                    reply_text += f"\n🏨 [Find hotels in {destination.title()}]({hotel_url})"
+                except:
+                    pass
+
     except Exception as e:
         reply_text = f"Oops! Something went wrong: {e}"
 
-    # Weather check
-    if "weather" in user_input.lower():
-        for word in user_input.lower().split():
-            if word not in ["weather", "is", "like", "in", "the", "how", "what", "current"]:
-                weather_info = get_weather(word)
-                reply_text = weather_info
-                break
-
-    # Try parsing for city and date info
-    if any(loc in user_input.lower() for loc in ["to", "from"]):
-        words = user_input.lower().split()
-        try:
-            from_index = words.index("from") + 1
-            to_index = words.index("to") + 1
-            origin = words[from_index]
-            destination = words[to_index]
-
-            flight_url = f"https://www.google.com/travel/flights?q=Flights%20from%20{quote_plus(origin)}%20to%20{quote_plus(destination)}"
-            hotel_url = f"https://www.google.com/travel/hotels/{quote_plus(destination)}"
-
-            reply_text += f"\n\n✈️ [Search flights from {origin.title()} to {destination.title()}]({flight_url})"
-            reply_text += f"\n🏨 [Find hotels in {destination.title()}]({hotel_url})"
-        except:
-            pass
-
     messages.append({"role": "model", "parts": reply_text})
 
+# --- Display Chat ---
 if "messages" in st.session_state:
     for msg in st.session_state["messages"]:
         if msg["role"] == "model":
