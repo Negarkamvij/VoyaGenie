@@ -14,11 +14,10 @@ model = genai.GenerativeModel("gemini-1.5-flash")
 def fetch_conversation():
     if "messages" not in st.session_state:
         st.session_state["messages"] = [
-            {"role": "user", "parts": "System prompt: You are VoyaGenie 🧞‍♂️, a smart, Google-powered travel assistant. When the user mentions travel, ask smart follow-up questions to refine results — for example, ask for preferred flight types (direct/cheap), hotel filters (budget, stars), or restaurant preferences (cuisine, price, rating). Then generate Google links or summaries for the most relevant options. Do not simulate browsing or delays — always respond quickly and use helpful links."}
+            {"role": "user", "parts": "System prompt: You are VoyaGenie 🧞‍♂️, a smart, Google-powered travel assistant. When the user mentions travel, ask smart follow-up questions to refine results — for example, ask for preferred flight types (direct/cheap), hotel filters (budget, stars), or restaurant preferences (cuisine, price, rating). Then generate Google links or summaries for the most relevant options. Do not simulate browsing or delays — always respond quickly and use helpful links.. You do not pretend to search. If asked for flights or hotels, generate clickable search links and do not simulate browsing time. Always be fast, helpful, and skip delays."}
         ]
     return st.session_state["messages"]
 
-# --- Styling ---
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap');
@@ -47,22 +46,13 @@ st.markdown("""
   border-radius: 12px !important;
   margin-top: 1rem;
 }
-.block-container {
-  background-color: rgba(255,255,255,0.4) !important;
-  border-radius: 16px;
-  padding: 1rem;
-  margin-bottom: 0 !important;
-  box-shadow: none;
-}
 </style>
 <h1 style='text-align:center;'>🧞‍♂️ VoyaGenie</h1>
 <h3 style='text-align:center;'>Your Personal Travel Chatbot</h3>
 """, unsafe_allow_html=True)
 
-# --- Chat Input ---
 user_input = st.chat_input("Tell me where you're traveling to and from, plus your dates!")
 
-# --- Handle Chat ---
 if user_input:
     messages = fetch_conversation()
     messages.append({"role": "user", "parts": user_input})
@@ -81,7 +71,7 @@ if user_input:
             origin = words[from_index]
             destination = words[to_index]
 
-            # Compose Google Flights and Hotels URLs
+            # Compose smart Google Flights and Hotels URLs
             flight_url = f"https://www.google.com/travel/flights?q=Flights%20from%20{quote_plus(origin)}%20to%20{quote_plus(destination)}%20in%20June%202024&curr=USD&hl=en&gl=US&source=flights&flt={quote_plus(origin)}.{quote_plus(destination)}.2024-06-01*{quote_plus(destination)}.{quote_plus(origin)}.2024-06-30;c:USD;e:1;sd:1;t=f"
             hotel_url = f"https://www.google.com/travel/hotels/{quote_plus(destination)}"
 
