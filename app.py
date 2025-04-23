@@ -76,11 +76,18 @@ if user_input:
     messages = fetch_conversation()
     messages.append({"role": "user", "parts": user_input})
     try:
-        # Weather check first
-        weather_match = re.search(r"weather\\s+(in\\s+)?([a-zA-Z\\s]+)", user_input.lower())
-        if weather_match:
-            city_query = weather_match.group(2).strip()
-            reply_text = get_weather(city_query)
+        # Check for weather request with flexible parsing
+        if "weather" in user_input.lower():
+            # Attempt to extract location from the text after "in"
+            match = re.search(r"weather.*in\s+([a-zA-Z\s]+)", user_input.lower())
+            if match:
+                city_query = match.group(1).strip()
+                reply_text = get_weather(city_query)
+            else:
+                # If no "in" match, try extracting the last word as city
+                words = user_input.lower().split()
+                city_query = words[-1]
+                reply_text = get_weather(city_query)
         else:
             response = model.generate_content(messages)
             reply_text = response.candidates[0].content.parts[0].text
