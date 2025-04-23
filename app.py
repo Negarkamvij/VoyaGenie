@@ -1,18 +1,14 @@
 import streamlit as st
 import os
 import io
-import base64
 import dotenv
-import requests
 import google.generativeai as genai
 
 # Load API keys
 dotenv.load_dotenv()
 GEMINI_API_KEY = os.getenv("API_KEY")
-VISION_API_KEY = os.getenv("GOOGLE_VISION_API_KEY")
-
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-1.5-pro-vision")
 
 # --- Session State Setup ---
 if "chat_history" not in st.session_state:
@@ -37,50 +33,23 @@ st.markdown("""
 <h3 style='text-align:center;'>Ask Me Anything About Travel</h3>
 """, unsafe_allow_html=True)
 
-# --- Google Vision API function ---
-def recognize_location_from_image(image_bytes):
-    encoded = base64.b64encode(image_bytes).decode()
-    url = f"https://vision.googleapis.com/v1/images:annotate?key={VISION_API_KEY}"
-    body = {
-        "requests": [
-            {
-                "image": {"content": encoded},
-                "features": [
-                    {"type": "WEB_DETECTION"},
-                    {"type": "LABEL_DETECTION", "maxResults": 3}
-                ]
-            }
-        ]
-    }
-    response = requests.post(url, json=body)
-    try:
-        data = response.json()['responses'][0]
-        labels = []
-        if 'webDetection' in data and 'bestGuessLabels' in data['webDetection']:
-            labels.append(data['webDetection']['bestGuessLabels'][0]['label'])
-        if 'labelAnnotations' in data:
-            labels.extend([ann['description'] for ann in data['labelAnnotations']])
-        return ', '.join(set(labels)) if labels else None
-    except Exception:
-        return None
-
-# --- Image upload + recognition ---
-uploaded_file = st.sidebar.file_uploader("📸 Upload a destination photo", type=["jpg", "jpeg", "png"])
-if uploaded_file:
-    image_bytes = uploaded_file.read()
-    st.sidebar.image(image_bytes, caption="Uploaded Image", use_column_width=True)
-    guess = recognize_location_from_image(image_bytes)
-    st.session_state.chat_history.append({"role": "user", "text": "[uploaded an image]"})
-    if guess:
-        reply = f"That looks like: **{guess}**. Want help planning a trip there?"
-    else:
-        reply = "Sorry, I couldn't confidently identify the place. Could you type the destination?"
-    st.session_state.chat_history.append({"role": "genie", "text": reply})
-
 # --- Display chat ---
 for msg in st.session_state.chat_history:
     speaker = "🧞‍♂️ VoyaGenie" if msg['role'] == 'genie' else "💬 You"
     st.markdown(f"<div class='chat-response'><b>{speaker}:</b> {msg['text']}</div>", unsafe_allow_html=True)
+
+# --- Image upload and Gemini Vision API recognition ---
+uploaded_file = st.sidebar.file_uploader("📸 Upload a destination photo", type=["jpg", "jpeg", "png"])
+if uploaded_file:
+    image_bytes = uploaded_file.read()
+    st.sidebar.image(image_bytes, caption="Uploaded Image", use_container_width=True)
+    try:
+        vision_response = model.generate_content([{"mime_type": uploaded_file.type, "data": image_bytes}], stream=False)
+        guess = vision_response.text.strip()
+        st.session_state.chat_history.append({"role": "user", "text": "[uploaded a photo]"})
+        st.session_state.chat_history.append({"role": "genie", "text": f"It looks like this could be: **{guess}**. Want to plan a trip there?"})
+    except Exception as e:
+        st.session_state.chat_history.append({"role": "genie", "text": f"Sorry, I couldn’t recognize the photo. Could you describe the destination?"})
 
 # --- Input box with Send button ---
 with st.form(key="chat_form", clear_on_submit=True):
@@ -88,10 +57,11 @@ with st.form(key="chat_form", clear_on_submit=True):
     submitted = st.form_submit_button("Send")
 
 if submitted and user_input.strip():
-    st.session_state.chat_history.append({"role": "user", "text": user_input.strip()})
+    user_message = user_input.strip()
+    st.session_state.chat_history.append({"role": "user", "text": user_message})
     try:
-        response = st.session_state.chat.send_message(user_input.strip())
+        response = st.session_state.chat.send_message(user_message)
         reply = response.text.strip()
+        st.session_state.chat_history.append({"role": "genie", "text": reply})
     except Exception as e:
-        reply = f"Oops, something went wrong: {e}"
-    st.session_state.chat_history.append({"role": "genie", "text": reply})
+        st.session_state.chat_history.append({"role": "genie", "text": f"Oops, something went wrong: {e}"})
