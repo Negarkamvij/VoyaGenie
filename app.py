@@ -60,17 +60,19 @@ user_input = st.chat_input("Tell me where you're traveling to and from, plus you
 def get_weather(city):
     try:
         api_key = "50641414b45f330d06ba7e0626def10a"
-        url = f"https://api.openweathermap.org/data/2.5/weather?q={quote_plus(city)}&appid={api_key}&units=metric"
+        city_clean = city.strip().title()
+        url = f"https://api.openweathermap.org/data/2.5/weather?q={quote_plus(city_clean)}&appid={api_key}&units=metric"
         res = requests.get(url)
         data = res.json()
-        if data["cod"] == 200:
+
+        if data.get("cod") == 200:
             temp = data["main"]["temp"]
             desc = data["weather"][0]["description"]
-            return f"The current weather in {city.title()} is {temp}°C with {desc}."
+            return f"The current weather in {city_clean} is {temp}°C with {desc}."
         else:
-            return f"Sorry, I couldn't retrieve weather data for {city.title()}."
-    except:
-        return "Something went wrong retrieving the weather."
+            return f"Sorry, I couldn't retrieve weather data for {city_clean}. Try spelling out abbreviations (e.g., 'New Jersey' instead of 'NJ')."
+    except Exception as e:
+        return f"Something went wrong retrieving the weather: {e}"
 
 if user_input:
     messages = fetch_conversation()
@@ -78,13 +80,11 @@ if user_input:
     try:
         # Check for weather request with flexible parsing
         if "weather" in user_input.lower():
-            # Attempt to extract location from the text after "in"
             match = re.search(r"weather.*in\s+([a-zA-Z\s]+)", user_input.lower())
             if match:
                 city_query = match.group(1).strip()
                 reply_text = get_weather(city_query)
             else:
-                # If no "in" match, try extracting the last word as city
                 words = user_input.lower().split()
                 city_query = words[-1]
                 reply_text = get_weather(city_query)
