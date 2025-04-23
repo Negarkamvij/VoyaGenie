@@ -9,11 +9,11 @@ api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-# --- Conversation Setup ---
+# --- Travel Mode Detection Prompt ---
 def fetch_conversation():
     if "messages" not in st.session_state:
         st.session_state["messages"] = [
-            {"role": "user", "parts": "System prompt: You are VoyaGenie, a helpful AI travel assistant."}
+            {"role": "user", "parts": "System prompt: You are VoyaGenie 🧞‍♂️, a smart travel assistant. Your job is to determine if the user should travel by plane, train, or car based on what they say and their preferences. Then, help them find flights, hotels, or rental cars as needed."}
         ]
     return st.session_state["messages"]
 
@@ -28,7 +28,7 @@ st.markdown("""
 <h3 style='text-align:center;'>Your Personal Travel Chatbot</h3>
 """, unsafe_allow_html=True)
 
-user_input = st.chat_input("Ask your travel question...")
+user_input = st.chat_input("Tell me about your trip — where are you going from and to?")
 
 if user_input:
     messages = fetch_conversation()
