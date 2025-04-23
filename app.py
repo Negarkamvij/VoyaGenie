@@ -3,10 +3,12 @@ import os
 import dotenv
 import google.generativeai as genai
 from urllib.parse import quote_plus
+import requests
 
 # Load environment variables
 dotenv.load_dotenv()
 api_key = os.getenv("API_KEY")
+weather_key = "50641414b45f330d06ba7e0626def10a"  # OpenWeather API Key
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
@@ -65,7 +67,6 @@ if user_input:
 
     # Try parsing for city and date info
     if any(loc in user_input.lower() for loc in ["to", "from"]):
-        # Basic parsing (manual, should be upgraded with NLP later)
         words = user_input.lower().split()
         try:
             from_index = words.index("from") + 1
@@ -77,8 +78,18 @@ if user_input:
             flight_url = f"https://www.google.com/travel/flights?q=Flights%20from%20{quote_plus(origin)}%20to%20{quote_plus(destination)}"
             hotel_url = f"https://www.google.com/travel/hotels/{quote_plus(destination)}"
 
+            # Get weather
+            weather_url = f"https://api.openweathermap.org/data/2.5/weather?q={quote_plus(destination)}&appid={weather_key}&units=metric"
+            weather_response = requests.get(weather_url).json()
+            weather_info = ""
+            if "main" in weather_response:
+                temp = weather_response['main']['temp']
+                desc = weather_response['weather'][0]['description']
+                weather_info = f"\n🌤️ Current weather in {destination.title()}: {temp}°C, {desc}."
+
             reply_text += f"\n\n✈️ [Search flights from {origin.title()} to {destination.title()}]({flight_url})"
             reply_text += f"\n🏨 [Find hotels in {destination.title()}]({hotel_url})"
+            reply_text += weather_info
         except:
             pass
 
