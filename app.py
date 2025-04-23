@@ -8,7 +8,7 @@ import google.generativeai as genai
 dotenv.load_dotenv()
 GEMINI_API_KEY = os.getenv("API_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-1.5-pro-vision")
+model = genai.GenerativeModel("gemini-pro-vision")
 
 # --- Session State Setup ---
 if "chat_history" not in st.session_state:
@@ -52,9 +52,13 @@ if uploaded_file:
         st.session_state.chat_history.append({"role": "genie", "text": f"Sorry, I couldn’t recognize the photo. Could you describe the destination?"})
 
 # --- Input box with Send button ---
-with st.form(key="chat_form", clear_on_submit=True):
-    user_input = st.text_input("Ask your travel question:", key="user_input_form")
-    submitted = st.form_submit_button("Send")
+col1, col2 = st.columns([0.85, 0.15])
+with col1:
+    user_input = st.text_input("Ask your travel question:", key="user_input_form", placeholder="Type and press Enter or click Send")
+with col2:
+    send_clicked = st.button("Send")
+
+if user_input.strip() and (send_clicked or user_input):
 
 if submitted and user_input.strip():
     user_message = user_input.strip()
