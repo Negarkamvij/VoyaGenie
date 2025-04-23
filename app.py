@@ -41,6 +41,7 @@ st.markdown("""
   font-weight: bold;
   padding: 0.75rem;
 }
+
 .stTextInput > div {
   background-color: rgba(255,255,255,0.3) !important;
   border-radius: 12px !important;
@@ -64,6 +65,7 @@ if user_input:
 
     # Try parsing for city and date info
     if any(loc in user_input.lower() for loc in ["to", "from"]):
+        # Basic parsing (manual, should be upgraded with NLP later)
         words = user_input.lower().split()
         try:
             from_index = words.index("from") + 1
@@ -71,11 +73,11 @@ if user_input:
             origin = words[from_index]
             destination = words[to_index]
 
-            # Compose smart Google Flights and Hotels URLs
-            flight_url = f"https://www.google.com/travel/flights?q=Flights%20from%20{quote_plus(origin)}%20to%20{quote_plus(destination)}%20in%20June%202024&curr=USD&hl=en&gl=US&source=flights&flt={quote_plus(origin)}.{quote_plus(destination)}.2024-06-01*{quote_plus(destination)}.{quote_plus(origin)}.2024-06-30;c:USD;e:1;sd:1;t=f"
+            # Compose Google Flights and Hotels URLs
+            flight_url = f"https://www.google.com/travel/flights?q=Flights%20from%20{quote_plus(origin)}%20to%20{quote_plus(destination)}"
             hotel_url = f"https://www.google.com/travel/hotels/{quote_plus(destination)}"
 
-            reply_text += f"\n\n✈️ [Search cheapest flights from {origin.title()} to {destination.title()} in June for 2 adults]({flight_url})"
+            reply_text += f"\n\n✈️ [Search flights from {origin.title()} to {destination.title()}]({flight_url})"
             reply_text += f"\n🏨 [Find hotels in {destination.title()}]({hotel_url})"
         except:
             pass
