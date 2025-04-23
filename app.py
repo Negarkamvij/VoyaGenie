@@ -8,7 +8,7 @@ import google.generativeai as genai
 dotenv.load_dotenv()
 GEMINI_API_KEY = os.getenv("API_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-pro-vision")
+model = genai.GenerativeModel("gemini-1.5-flash")  # Using chat-friendly and stable model
 
 # --- Session State Setup ---
 if "chat_history" not in st.session_state:
@@ -38,19 +38,6 @@ for msg in st.session_state.chat_history:
     speaker = "🧞‍♂️ VoyaGenie" if msg['role'] == 'genie' else "💬 You"
     st.markdown(f"<div class='chat-response'><b>{speaker}:</b> {msg['text']}</div>", unsafe_allow_html=True)
 
-# --- Image upload and Gemini Vision API recognition ---
-uploaded_file = st.sidebar.file_uploader("📸 Upload a destination photo", type=["jpg", "jpeg", "png"])
-if uploaded_file:
-    image_bytes = uploaded_file.read()
-    st.sidebar.image(image_bytes, caption="Uploaded Image", use_container_width=True)
-    try:
-        vision_response = model.generate_content([{"mime_type": uploaded_file.type, "data": image_bytes}], stream=False)
-        guess = vision_response.text.strip()
-        st.session_state.chat_history.append({"role": "user", "text": "[uploaded a photo]"})
-        st.session_state.chat_history.append({"role": "genie", "text": f"It looks like this could be: **{guess}**. Want to plan a trip there?"})
-    except Exception as e:
-        st.session_state.chat_history.append({"role": "genie", "text": f"Sorry, I couldn’t recognize the photo. Could you describe the destination?"})
-
 # --- Input box with Send button ---
 col1, col2 = st.columns([0.85, 0.15])
 with col1:
@@ -58,7 +45,8 @@ with col1:
 with col2:
     send_clicked = st.button("Send")
 
-if user_input.strip() and (send_clicked or st.session_state.get("user_input_form")):
+# --- Handle chat input ---
+if (send_clicked or user_input) and user_input.strip():
     user_message = user_input.strip()
     st.session_state.chat_history.append({"role": "user", "text": user_message})
     try:
@@ -67,12 +55,4 @@ if user_input.strip() and (send_clicked or st.session_state.get("user_input_form
         st.session_state.chat_history.append({"role": "genie", "text": reply})
     except Exception as e:
         st.session_state.chat_history.append({"role": "genie", "text": f"Oops, something went wrong: {e}"})
-    user_message = user_input.strip()
-    st.session_state.chat_history.append({"role": "user", "text": user_message})
-    try:
-        response = st.session_state.chat.send_message(user_message)
-        reply = response.text.strip()
-        st.session_state.chat_history.append({"role": "genie", "text": reply})
-    except Exception as e:
-        st.session_state.chat_history.append({"role": "genie", "text": f"Oops, something went wrong: {e}"})
-
+    st.rerun()
