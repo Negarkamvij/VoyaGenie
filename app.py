@@ -14,6 +14,20 @@ model = genai.GenerativeModel("gemini-1.5-flash")
 # --- Session State Setup ---
 def fetch_conversation():
     if "messages" not in st.session_state:
+        # SAVE into database 
+        # Example: Save messages to a local JSON file
+        if not os.path.exists("conversation_data.json"):
+            with open("conversation_data.json", "w") as f:
+            json.dump([], f)
+
+        with open("conversation_data.json", "r") as f:
+            data = json.load(f)
+
+        data.append({"messages": st.session_state["messages"]})
+
+        with open("conversation_data.json", "w") as f:
+            json.dump(data, f, indent=4)
+
         st.session_state["messages"] = [
             {"role": "user", "parts": "System prompt: You are VoyaGenie 🧞‍♂️, a smart, Google-powered travel assistant. When the user mentions travel, ask smart follow-up questions to refine results — for example, ask for preferred flight types (direct/cheap), hotel filters (budget, stars), or restaurant preferences (cuisine, price, rating). Then generate Google links or summaries for the most relevant options. Do not simulate browsing or delays — always respond quickly and use helpful links. You do not pretend to search. If asked for flights or hotels, generate clickable search links and do not simulate browsing time. Always be fast, helpful, and skip delays. If no date is given, assume today's date."}
         ]
