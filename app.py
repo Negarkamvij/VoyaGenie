@@ -18,6 +18,13 @@ def fetch_conversation():
         st.session_state["messages"] = [
             {"role": "user", "parts": "System prompt: You are VoyaGenie 🧞‍♂️, a smart, Google-powered travel assistant. When the user mentions travel, ask smart follow-up questions to refine results — for example, ask for preferred flight types (direct/cheap), hotel filters (budget, stars), or restaurant preferences (cuisine, price, rating). Then generate Google links or summaries for the most relevant options. Do not simulate browsing or delays — always respond quickly and use helpful links. You do not pretend to search. If asked for flights or hotels, generate clickable search links and do not simulate browsing time. Always be fast, helpful, and skip delays. If no date is given, assume today's date."}
         ]
+        if not os.path.exists("chat_history.json"):
+            with open("chat_history.json", "w") as f:
+                json.dump(st.session_state["messages"], f)
+        else:
+            # Load the chat history from the JSON file
+            with open("chat_history.json", "r") as f:
+                st.session_state["messages"] = json.load(f)
     return st.session_state["messages"]
 
 st.markdown("""
