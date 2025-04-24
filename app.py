@@ -4,6 +4,7 @@ import dotenv
 import google.generativeai as genai
 from urllib.parse import quote_plus
 import requests
+import json
 
 # Load environment variables
 dotenv.load_dotenv()
