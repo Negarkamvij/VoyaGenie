@@ -18,7 +18,7 @@ def fetch_conversation():
         # Example: Save messages to a local JSON file
         if not os.path.exists("conversation_data.json"):
             with open("conversation_data.json", "w") as f:
-            json.dump([], f)
+                json.dump([], f)
 
         with open("conversation_data.json", "r") as f:
             data = json.load(f)
