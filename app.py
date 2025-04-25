@@ -31,57 +31,58 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap');
 
-html, body, .stApp {
+/* Reset all margins and paddings */
+html, body {
     margin: 0 !important;
     padding: 0 !important;
-    height: 100% !important;
-    width: 100% !important;
-    background-color: transparent !important;
+    height: 100vh !important;
+    width: 100vw !important;
+    background: transparent !important;
+    overflow-x: hidden !important;
 }
 
+/* Main Streamlit container */
 .stApp {
     background-image: linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.6)), url('https://i.imgur.com/C6p1a31.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     background-attachment: fixed;
-    overflow-x: hidden;
+    min-height: 100vh;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
 }
 
+/* Style everything */
 * {
     font-family: 'Comic Neue', 'Comic Sans MS', cursive, sans-serif !important;
     font-weight: bold !important;
 }
 
-/* Chat messages */
-.chat-response {
-    background-color: rgba(255,255,255,0.6);
-    padding: 1rem;
-    border-radius: 12px;
-    margin: 0.5rem 0;
-    font-size: 1rem;
-    line-height: 1.5;
-}
-
-/* Input box customization */
+/* Fix for the input box */
 .stTextInput > div > div > input {
     background-color: rgba(255,255,255,0.4) !important;
     border-radius: 12px !important;
     color: #000 !important;
     font-weight: bold;
     padding: 0.75rem;
+    border: 2px solid #f47174 !important;
 }
-
 .stTextInput > div {
-    background-color: rgba(255,255,255,0.3) !important;
+    background-color: rgba(255,255,255,0.2) !important;
     border-radius: 12px !important;
     margin-top: 1rem;
-    border: 2px solid #f47174;
+}
+
+/* Prevent margin collapse on input or main divs */
+section.main > div {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
 }
 </style>
-<h1 style='text-align:center;'>🧞‍♂️ VoyaGenie</h1>
-<h3 style='text-align:center;'>Your Personal Travel Chatbot</h3>
 """, unsafe_allow_html=True)
+
 
 # --- Chat Input ---
 user_input = st.chat_input("Tell me where you're traveling to and from, plus your dates!")
