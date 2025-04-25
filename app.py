@@ -22,15 +22,24 @@ def fetch_conversation():
             with open("chat_history.json", "w") as f:
                 json.dump(st.session_state["messages"], f)
         else:
-            # Load the chat history from the JSON file
             with open("chat_history.json", "r") as f:
                 st.session_state["messages"] = json.load(f)
     return st.session_state["messages"]
 
+# --- Page Style ---
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap');
-* { font-family: 'Comic Neue', 'Comic Sans MS', cursive, sans-serif !important; font-weight: bold !important; }
+* {
+    font-family: 'Comic Neue', 'Comic Sans MS', cursive, sans-serif !important;
+    font-weight: bold !important;
+}
+html, body {
+    padding: 0 !important;
+    margin: 0 !important;
+    height: 100% !important;
+    background-color: transparent !important;
+}
 .stApp {
     background-image: linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.6)), url('https://i.imgur.com/C6p1a31.png');
     background-size: cover;
@@ -38,29 +47,36 @@ st.markdown("""
     background-repeat: no-repeat;
     background-attachment: fixed;
     min-height: 100vh;
-    padding-bottom: 0px !important;
-    margin-bottom: 0px !important;
+    padding: 0 !important;
+    margin: 0 !important;
     overflow-x: hidden;
 }
-.chat-response { background-color: rgba(255,255,255,0.6); padding:1rem; border-radius:12px; margin:0.5rem 0; font-size:1rem; line-height:1.5; }
-.stTextInput > div > div > input {
-  background-color: rgba(255,255,255,0.4) !important;
-  border-radius: 12px !important;
-  color: #000 !important;
-  font-weight: bold;
-  padding: 0.75rem;
+.chat-response {
+    background-color: rgba(255,255,255,0.6);
+    padding: 1rem;
+    border-radius: 12px;
+    margin: 0.5rem 0;
+    font-size: 1rem;
+    line-height: 1.5;
 }
-
+.stTextInput > div > div > input {
+    background-color: rgba(255,255,255,0.4) !important;
+    border-radius: 12px !important;
+    color: #000 !important;
+    font-weight: bold;
+    padding: 0.75rem;
+}
 .stTextInput > div {
-  background-color: rgba(255,255,255,0.3) !important;
-  border-radius: 12px !important;
-  margin-top: 1rem;
+    background-color: rgba(255,255,255,0.3) !important;
+    border-radius: 12px !important;
+    margin-top: 1rem;
 }
 </style>
 <h1 style='text-align:center;'>🧞‍♂️ VoyaGenie</h1>
 <h3 style='text-align:center;'>Your Personal Travel Chatbot</h3>
 """, unsafe_allow_html=True)
 
+# --- Chat Logic ---
 user_input = st.chat_input("Tell me where you're traveling to and from, plus your dates!")
 
 if user_input:
@@ -72,6 +88,7 @@ if user_input:
     except Exception as e:
         reply_text = f"Oops! Something went wrong: {e}"
 
+    # Detect flight/hotel query
     if any(loc in user_input.lower() for loc in ["to", "from"]):
         words = user_input.lower().split()
         try:
@@ -90,6 +107,7 @@ if user_input:
 
     messages.append({"role": "model", "parts": reply_text})
 
+# --- Display Chat ---
 if "messages" in st.session_state:
     for msg in st.session_state["messages"]:
         if msg["role"] == "model":
