@@ -5,6 +5,7 @@ import google.generativeai as genai
 from urllib.parse import quote_plus
 import requests
 import json
+import re
 
 # Load environment variables
 dotenv.load_dotenv()
@@ -99,12 +100,16 @@ if user_input:
     messages = fetch_conversation()
     messages.append({"role": "user", "parts": user_input})
 
-    # Weather
+    # --- Weather ---
     if "weather" in user_input.lower() or "wear" in user_input.lower():
-        city = user_input.split()[-1]
-        reply_text = get_weather_summary(city)
+        city_match = re.findall(r"in ([A-Za-z\s]+)", user_input.lower())
+        city = city_match[0].strip() if city_match else ""
+        if city:
+            reply_text = get_weather_summary(city)
+        else:
+            reply_text = "❌ I couldn't tell which city you meant. Try asking like: 'What's the weather in Istanbul?'"
 
-    # Flights/Hotels
+    # --- Flights/Hotels ---
     elif any(loc in user_input.lower() for loc in ["to", "from"]):
         words = user_input.lower().split()
         try:
@@ -123,7 +128,7 @@ if user_input:
         except:
             reply_text = "✈️ Couldn’t figure out origin/destination. Please try again."
 
-    # Car Rental
+    # --- Car Rental ---
     elif any(word in user_input.lower() for word in ["car", "suv", "van", "jeep", "truck", "rent"]):
         words = user_input.lower().split()
         budget = ""
@@ -142,7 +147,7 @@ if user_input:
         rental_url = f"https://www.google.com/search?q={quote_plus(rental_query)}"
         reply_text = f"🚗 [Compare {car_type.title()} rental options]({rental_url})"
 
-    # General fallback with Gemini
+    # --- General fallback with Gemini ---
     else:
         try:
             response = model.generate_content(messages)
