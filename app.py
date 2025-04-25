@@ -7,13 +7,13 @@ import requests
 import json
 import re
 
-# Load environment variables
+# --- Load environment variables ---
 dotenv.load_dotenv()
 api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-# --- Weather Function ---
+# --- Weather function ---
 def get_weather_summary(city):
     weather_key = os.getenv("WEATHER_API_KEY")
     url = f"https://api.openweathermap.org/data/2.5/weather?q={quote_plus(city)}&appid={weather_key}&units=metric"
@@ -26,10 +26,9 @@ def get_weather_summary(city):
             description = data["weather"][0]["description"]
             advice = "🧥 Wear layers or a jacket." if temp < 18 else "👕 You can wear something light today."
             return f"🌦️ Weather in {city.title()}: {description}, {temp}°C (feels like {feels_like}°C).\n{advice}"
-        else:
-            return f"❌ Sorry, I couldn’t find the weather for {city.title()}."
     except Exception as e:
         return f"⚠️ Error getting weather: {e}"
+    return f"❌ Sorry, I couldn’t find the weather for {city.title()}."
 
 # --- Session State Setup ---
 def fetch_conversation():
@@ -45,7 +44,7 @@ def fetch_conversation():
                 st.session_state["messages"] = json.load(f)
     return st.session_state["messages"]
 
-# --- Custom Styling ---
+# --- Styling ---
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap');
@@ -100,7 +99,7 @@ if user_input:
     messages = fetch_conversation()
     messages.append({"role": "user", "parts": user_input})
 
-    # --- Weather ---
+    # Weather handling
     if "weather" in user_input.lower() or "wear" in user_input.lower():
         city_match = re.findall(r"in ([A-Za-z\s]+)", user_input.lower())
         city = city_match[0].strip() if city_match else ""
@@ -109,7 +108,7 @@ if user_input:
         else:
             reply_text = "❌ I couldn't tell which city you meant. Try asking like: 'What's the weather in Istanbul?'"
 
-    # --- Flights/Hotels ---
+    # Flights & hotels
     elif any(loc in user_input.lower() for loc in ["to", "from"]):
         words = user_input.lower().split()
         try:
@@ -128,7 +127,7 @@ if user_input:
         except:
             reply_text = "✈️ Couldn’t figure out origin/destination. Please try again."
 
-    # --- Car Rental ---
+    # Car rental handling
     elif any(word in user_input.lower() for word in ["car", "suv", "van", "jeep", "truck", "rent"]):
         words = user_input.lower().split()
         budget = ""
@@ -147,7 +146,7 @@ if user_input:
         rental_url = f"https://www.google.com/search?q={quote_plus(rental_query)}"
         reply_text = f"🚗 [Compare {car_type.title()} rental options]({rental_url})"
 
-    # --- General fallback with Gemini ---
+    # Fallback: Gemini handles everything else
     else:
         try:
             response = model.generate_content(messages)
@@ -157,7 +156,7 @@ if user_input:
 
     messages.append({"role": "model", "parts": reply_text})
 
-# --- Display Messages ---
+# --- Display Chat Messages ---
 if "messages" in st.session_state:
     for msg in st.session_state["messages"]:
         if msg["role"] == "model":
