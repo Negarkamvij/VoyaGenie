@@ -96,4 +96,4 @@ if "messages" in st.session_state:
             st.chat_message("assistant").markdown(msg["parts"])
         elif msg["role"] == "user" and "System prompt" not in msg["parts"]:
             st.chat_message("user").markdown(msg["parts"]) 
-this is its finilized code, I want to add resturants with best prises API to it what should I do?
+
