@@ -17,7 +17,6 @@ model = genai.GenerativeModel("gemini-1.5-flash")
 def get_weather_summary(city):
     weather_key = os.getenv("WEATHER_API_KEY")
     url = f"https://api.openweathermap.org/data/2.5/weather?q={quote_plus(city)}&appid={weather_key}&units=metric"
-    print(url)
     try:
         res = requests.get(url)
         data = res.json()
